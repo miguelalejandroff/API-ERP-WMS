@@ -18,6 +18,9 @@ class EndpointERP
          * 
          * otro cambio mas brutal aun
          */
+        /**
+         * nicolas el mas capito salio del closet
+         */
     }
     public function createOrdenEntrada(ERPOrdenEntradaService $orden)
     {
