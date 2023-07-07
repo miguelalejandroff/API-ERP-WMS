@@ -14,6 +14,10 @@ class EndpointERP
     public function __construct(public Request $request)
     {
         //mi cambio brutal nunca lo puedo enviar pipipi
+        /**
+         * 
+         * otro cambio mas brutal aun
+         */
     }
     public function createOrdenEntrada(ERPOrdenEntradaService $orden)
     {
