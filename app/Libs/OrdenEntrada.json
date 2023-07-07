@@ -1,0 +1,12 @@
+{
+    "numeroDocumento": 0,
+    "tipoDocumento": "string(2)",
+    "fechaRecepcionWMS": "2023-04-03T16:52:40.733Z",
+    "documentoDetalle": [
+        {
+            "codigoProducto": "string(7)",
+            "cantidadSolicitada": 0,
+            "cantidadRecepcionada": 0
+        }
+    ]
+}
