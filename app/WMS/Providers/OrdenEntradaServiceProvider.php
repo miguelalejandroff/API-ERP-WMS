@@ -1,18 +1,14 @@
 <?php
 
-namespace App\Providers;
+namespace App\WMS\Providers;
 
-use App\Models\cmfactura;
-use App\Models\cmguias;
 use App\Models\cmordcom;
-use App\WMS\Adapters\OrdenEntrada\Guia;
-use App\WMS\Adapters\OrdenEntrada\NotaCredito;
 use App\WMS\Adapters\OrdenEntrada\OrdenCompraRecepcion;
-use App\WMS\Contracts\WMSOrdenEntradaService;
+use App\WMS\Contracts\OrdenEntradaService;
 use Illuminate\Support\ServiceProvider;
 use RuntimeException;
 
-class WMSOrdenEntradaServiceProvider extends ServiceProvider
+class OrdenEntradaServiceProvider extends ServiceProvider
 {
     /**
      * Register services.
@@ -21,8 +17,7 @@ class WMSOrdenEntradaServiceProvider extends ServiceProvider
      */
     public function register()
     {
-     /*   $this->app->bind(WMSOrdenEntradaService::class, function ($app) {
-
+        $this->app->bind(OrdenEntradaService::class, function ($app) {
 
             if ($app->request->orden) {
                 $model = cmordcom::Orden($app->request->orden);
@@ -35,12 +30,12 @@ class WMSOrdenEntradaServiceProvider extends ServiceProvider
                         if ($model) {
                             return new OrdenCompraRecepcion($model);
                         }
-                        
+
                     default:
                         throw new RuntimeException("Orden de Compra {$app->request->orden} No Existe ");
                 }
             }
-
+            /*
             if ($app->request->notaCredito) {
                 $model = cmfactura::NotaCredito($app->request->notaCredito);
                 switch ($model->fac_tipdoc) {
@@ -69,8 +64,8 @@ class WMSOrdenEntradaServiceProvider extends ServiceProvider
                     default:
                         throw new RuntimeException("Guia {$app->request->guia} No Existe ");
                 }
-            }
-        });*/
+            }*/
+        });
     }
 
     /**

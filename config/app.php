@@ -203,27 +203,13 @@ return [
         /*
         App\Providers\CreateItemCodigoBarraServiceProvider::class,
         App\Providers\CreateItemServiceProvider::class,
-        App\Providers\CreateOrdenEntradaServiceProvider::class,
-        App\Providers\CreateOrdenSalidaServiceProvider::class,
-        App\Providers\CreateProveedorServiceProvider::class,
-        App\Providers\CreateClienteServiceProvider::class,
-        App\Providers\CreateOrdenDespachoServiceProvider::class,
-        App\Providers\CreateOrdenFacturacionServiceProvider::class,
-        App\Providers\CreateOrdenSalidaOMSServiceProvider::class,
         */
         /*
          * Servicios Para Enviar al WMS 
          */
 
-        App\Providers\WMSItemCodigoBarraServiceProvider::class,
-        App\Providers\WMSItemServiceProvider::class,
-        App\Providers\WMSOrdenEntradaServiceProvider::class,
-        App\Providers\WMSOrdenSalidaServiceProvider::class,
-        App\Providers\WMSProveedorServiceProvider::class,
-        App\Providers\WMSClienteServiceProvider::class,
-        App\Providers\WMSOrdenDespachoServiceProvider::class,
-        App\Providers\WMSOrdenFacturacionServiceProvider::class,
-        App\Providers\WMSOrdenSalidaOMSServiceProvider::class
+        App\WMS\Providers\OrdenEntradaServiceProvider::class,
+        App\WMS\Providers\ItemServiceProvider::class,
     ],
 
     /*

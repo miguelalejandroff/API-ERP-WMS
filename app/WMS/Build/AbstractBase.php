@@ -20,7 +20,8 @@ abstract class AbstractBase
         $newData->codOwner = $this->codOwner();
         foreach ($this->fields as $field) {
             $data = $this->{$field}($this->model);
-            if ($data instanceof Collection and $data->isEmpty()) {
+
+            if ($data instanceof Collection and !$data->isEmpty()) {
                 continue;
             }
             if (!$data) {

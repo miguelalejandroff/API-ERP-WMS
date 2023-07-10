@@ -115,7 +115,6 @@ class CreateItem extends ItemService
     public function itemCodigoBarra($model): Collection
     {
         return  $model->wmscodigobarra->map(function ($model) {
-
             if (!empty($model->codigo_barra) && !empty($model->tipo_codigo)) {
                 return (new CreateItemCodigoBarra($model))->get();
             }
