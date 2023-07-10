@@ -3,11 +3,7 @@
 namespace App\WMS;
 
 use App\Libs\WMS;
-use App\Models\cmordcom;
-use App\WMS\Adapters\OrdenEntrada\OrdenCompraRecepcion;
-use App\WMS\Contracts\WMSItemService;
-use App\WMS\Contracts\WMSOrdenEntradaService;
-use App\WMS\Templates\Abstracts\ItemService;
+use App\WMS\Contracts\ItemService;
 use Illuminate\Http\Request;
 
 class EndpointWMS
@@ -19,9 +15,8 @@ class EndpointWMS
     {
         return WMS::post('WMS_Admin/CreateItem', $item->getJson());
     }
-    public function createOrdenEntrada(WMSOrdenEntradaService $orden)
+    public function createOrdenEntrada($orden)
     {
-        #return $orden->get();
         return WMS::post('WMS_Inbound/CreateOrdenEntrada', $orden->get());
     }
 }

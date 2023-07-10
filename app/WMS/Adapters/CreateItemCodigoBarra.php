@@ -2,35 +2,40 @@
 
 namespace App\WMS\Adapters;
 
-use App\Models\cmproductos;
-use App\WMS\Build\Adapter;
-use App\WMS\Contracts\WMSItemCodigoBarraService;
-use App\WMS\Templates\ItemCodigoBarra;
+use App\WMS\Contracts\ItemCodigoBarraService;
 
-class CreateItemCodigoBarra extends Adapter implements WMSItemCodigoBarraService
+class CreateItemCodigoBarra extends ItemCodigoBarraService
 {
-    public function makeItemCodigoBarra(cmproductos $model): array
+    protected function codItem($model): string
     {
-        $arr = [];
-        if (!is_null($model->wmscodigobarra)) {
-            foreach ($model->wmscodigobarra as $key => $row) {
-                if (!empty($row->codigo_barra) && empty($row->tipo_codigo)) {
-                    $arr[] = new ItemCodigoBarra(
-                        codUnidadMedida: null,
-                        codItem: $model->pro_codigo,
-                        codigoBarra: $row->codigo_barra,
-                        alias: "UN",
-                        factor: 1,
-                        ancho: $row->ancho,
-                        largo: $row->largo,
-                        alto: $row->alto,
-                        peso: $row->peso,
-                        volumen: $row->volumen,
-                        secuencia: $key,
-                    );
-                }
-            }
-        }
-        return $arr;
+        return $model->codigo_antig;
+    }
+    protected function codigoBarra($model): string
+    {
+        return $model->codigo_barra;
+    }
+    protected function alias($model): string
+    {
+        return "UN";
+    }
+    public function ancho($model): ?float
+    {
+        return (float)$model->ancho;
+    }
+    public function largo($model): ?float
+    {
+        return (float)$model->largo;
+    }
+    public function alto($model): ?float
+    {
+        return (float)$model->alto;
+    }
+    public function peso($model): ?float
+    {
+        return (float)$model->peso;
+    }
+    public function volumen($model): ?float
+    {
+        return (float)$model->volumen;
     }
 }

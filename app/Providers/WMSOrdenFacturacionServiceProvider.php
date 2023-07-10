@@ -15,7 +15,7 @@ class WMSOrdenFacturacionServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->app->bind(WMSOrdenFacturacionService::class, CreateOrdenFacturacion::class);
+        //$this->app->bind(WMSOrdenFacturacionService::class, CreateOrdenFacturacion::class);
     }
 
     /**

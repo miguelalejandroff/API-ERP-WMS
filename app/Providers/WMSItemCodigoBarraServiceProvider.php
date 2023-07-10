@@ -16,7 +16,7 @@ class WMSItemCodigoBarraServiceProvider extends ServiceProvider
     public function register()
     {
 
-        $this->app->bind(WMSItemCodigoBarraService::class, CreateItemCodigoBarra::class);
+        //$this->app->bind(WMSItemCodigoBarraService::class, CreateItemCodigoBarra::class);
     }
 
     /**

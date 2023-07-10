@@ -2,44 +2,123 @@
 
 namespace App\WMS\Adapters;
 
-use App\Models\cmproductos;
-use App\WMS\Build\Adapter;
-use App\WMS\Contracts\WMSItemCodigoBarraService;
-use App\WMS\Contracts\WMSItemService;
-use App\WMS\Templates\Item;
+use App\WMS\Contracts\ItemService;
+use Illuminate\Support\Collection;
 
-class CreateItem extends Adapter implements WMSItemService
+class CreateItem extends ItemService
 {
-    public function makeItem(cmproductos $model, WMSItemCodigoBarraService $codigoBarra): array
+
+    protected function codItem($model): string
     {
-        return [new Item(
-            codItem: $model->pro_codigo,
-            nomItem: $model->pro_descri,
-            codUnidadMedida: null,
-            codItemAlternativo: $model->pro_newcod,
-            nomAlternativo: $model->pro_descri,
-            controlaLote: $model->enlacewms?->controllote,
-            controlaSerie: $model->enlacewms?->controlserie,
-            controlaExpiracion: $model->enlacewms?->controlexpira,
-            controlaFabricacion: $model->enlacewms?->controlfabrica,
-            controlaVAS: $model->enlacewms?->controlvas,
-            controlaCantidad: $model->enlacewms?->controlcantid,
-            codTipo: $model->enlacewms?->codtipo,
-            marca: $model->enlacewms?->marca,
-            origen: $model->pro_impnac,
-            esPickeable: $model->enlacewms?->espickeable,
-            inspeccion: $model->enlacewms?->inspeccion,
-            cuarentena: $model->enlacewms?->cuarentena,
-            crossDocking: $model->enlacewms?->crossdocking,
-            codItemClase1: $model->enlacewms?->coditemclase1,
-            codItemClase2: $model->enlacewms?->coditemclase2,
-            codItemClase3: null,
-            codItemClase4: null,
-            codItemClase5: null,
-            codItemClase6: null,
-            codItemClase7: null,
-            codItemClase8: null,
-            itemCodigoBarra: $codigoBarra->get($model)['itemCodigoBarra'],
-        )];
+        return $model->pro_codigo;
+    }
+
+    protected function nomItem($model): string
+    {
+        return $model->pro_descri;
+    }
+
+    public function codItemAlternativo($model): string
+    {
+        return $model->pro_newcod;
+    }
+
+    public function nomAlternativo($model): string
+    {
+        return $model->pro_descri;
+    }
+
+    public function controlaLote($model): string
+    {
+        return $model->enlacewms?->controllote ?? parent::controlaLote($model);
+    }
+
+    public function controlaSerie($model): string
+    {
+        return $model->enlacewms?->controlserie ?? parent::controlaSerie($model);
+    }
+
+    public function controlaExpiracion($model): string
+    {
+        return $model->enlacewms?->controlexpira ?? parent::controlaExpiracion($model);
+    }
+
+    public function controlaFabricacion($model): string
+    {
+        return $model->enlacewms?->controlfabrica ?? parent::controlaFabricacion($model);
+    }
+
+    public function controlaVAS($model): string
+    {
+        return $model->enlacewms?->controlvas ?? parent::controlaVAS($model);
+    }
+
+    public function controlaCantidad($model): string
+    {
+        return $model->enlacewms?->controlcantid ?? parent::controlaCantidad($model);
+    }
+
+    public function codTipo($model): string
+    {
+        return $model->enlacewms?->codtipo ?? parent::codTipo($model);
+    }
+
+    public function marca($model): ?string
+    {
+        return $model->enlacewms?->marca;
+    }
+
+    public function origen($model): string
+    {
+        return $model->pro_impnac;
+    }
+
+    public function esPickeable($model): string
+    {
+        return $model->enlacewms?->espickeable ?? parent::esPickeable($model);
+    }
+
+    public function inspeccion($model): string
+    {
+        return $model->enlacewms?->inspeccion ?? parent::inspeccion($model);
+    }
+
+    public function cuarentena($model): string
+    {
+        return $model->enlacewms?->cuarentena ?? parent::cuarentena($model);
+    }
+
+    public function crossDocking($model): string
+    {
+        return $model->enlacewms?->crossdocking ?? parent::crossDocking($model);
+    }
+
+    public function codItemClase1($model): ?string
+    {
+        return $model->productoClase->codigoRubro;
+    }
+
+    public function nomItemClase1($model): ?string
+    {
+        return $model->productoClase->nombreRubro;
+    }
+
+    public function codItemClase2($model): ?string
+    {
+        return $model->productoClase->codigoGrupo;
+    }
+
+    public function nomItemClase2($model): ?string
+    {
+        return $model->productoClase->nombreGrupo;
+    }
+    public function itemCodigoBarra($model): Collection
+    {
+        return  $model->wmscodigobarra->map(function ($model) {
+
+            if (!empty($model->codigo_barra) && !empty($model->tipo_codigo)) {
+                return (new CreateItemCodigoBarra($model))->get();
+            }
+        });
     }
 }

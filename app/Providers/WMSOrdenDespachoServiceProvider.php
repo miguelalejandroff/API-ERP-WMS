@@ -15,7 +15,7 @@ class WMSOrdenDespachoServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->app->bind(WMSOrdenDespachoService::class, CreateOrdenDespacho::class);
+        //$this->app->bind(WMSOrdenDespachoService::class, CreateOrdenDespacho::class);
     }
 
     /**

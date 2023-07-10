@@ -13,8 +13,8 @@ use App\Models\mongodb\Saldos;
 use App\Models\prueba;
 use App\Models\vpparsis;
 use App\WMS\Adapters\CreateItem;
+use App\WMS\Adapters\OrdenEntrada\OrdenCompraRecepcion;
 use App\WMS\Templates\Implements\CreateItem as ImplementsCreateItem;
-use App\WMS\Templates\Implements\OrdenCompraRecepcion;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -31,8 +31,8 @@ class developer extends Controller
         dd(json_encode($newData));*/
         //return prueba::get();
 
+        //dd(vpparsis::get());
         $ordenBase = new OrdenCompraRecepcion(cmordcom::Orden(2304953));
-        dd(vpparsis::get());
         $newData = $ordenBase->getJson();
         dd($newData);
         dd(PdfDtes::send('81643200-6', 52, 974679, '2023-06-06', 940000, 0));

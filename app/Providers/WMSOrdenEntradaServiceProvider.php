@@ -21,7 +21,7 @@ class WMSOrdenEntradaServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->app->bind(WMSOrdenEntradaService::class, function ($app) {
+     /*   $this->app->bind(WMSOrdenEntradaService::class, function ($app) {
 
 
             if ($app->request->orden) {
@@ -70,7 +70,7 @@ class WMSOrdenEntradaServiceProvider extends ServiceProvider
                         throw new RuntimeException("Guia {$app->request->guia} No Existe ");
                 }
             }
-        });
+        });*/
     }
 
     /**

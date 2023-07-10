@@ -1,19 +1,20 @@
 <?php
 
-namespace App\WMS\Templates\Abstracts;
+namespace App\WMS\Contracts;
 
 use Illuminate\Http\JsonResponse;
+use App\WMS\Build\AbstractBase;
 
-abstract class ProveedorService extends AbstractBase
+abstract class ClienteService extends AbstractBase
 {
 
     protected $fields = [
-        'codProveedor',
-        'rutProveedor',
-        'nomProveedor',
+        'codCliente',
+        'rutCliente',
+        'nomCliente',
         'razonSocial',
         'nomCorto',
-        'giroProveedor',
+        'giroCliente',
         'direccion',
         'comuna',
         'ciudad',
@@ -23,23 +24,24 @@ abstract class ProveedorService extends AbstractBase
         'eMail',
         'contacto',
         'fillRate',
+        'codTipo',
+        'b2B',
     ];
-
 
     /**
      * Representa el CD, Site o Bodega a la cual se recibira la mercaderia
      */
-    abstract protected function codProveedor($model): string;
+    abstract protected function codCliente($model): string;
 
     /**
      * Corresponde al numero unico del documento de ingreso
      */
-    abstract protected function rutProveedor($model): string;
+    abstract protected function rutCliente($model): string;
 
     /**
      * Corresponde al numero unico del documento de ingreso
      */
-    abstract protected function nomProveedor($model): string;
+    abstract protected function nomCliente($model): string;
 
     /**
      * Corresponde al numero unico del documento de ingreso
@@ -60,11 +62,10 @@ abstract class ProveedorService extends AbstractBase
     /**
      * Corresponde al numero unico del documento de ingreso
      */
-    public function giroProveedor($model): ?string
+    public function giroCliente($model): ?string
     {
         return null;
     }
-
     /**
      * Corresponde al numero unico del documento de ingreso
      */
@@ -135,6 +136,21 @@ abstract class ProveedorService extends AbstractBase
     public function fillRate($model): int
     {
         return 0;
+    }
+    /**
+     * Corresponde al numero unico del documento de ingreso
+     */
+    public function codTipo($model): int
+    {
+        return 1;
+    }
+
+    /**
+     * Corresponde al numero unico del documento de ingreso
+     */
+    public function b2B($model): ?string
+    {
+        return null;
     }
 
     public function getJson(): JsonResponse

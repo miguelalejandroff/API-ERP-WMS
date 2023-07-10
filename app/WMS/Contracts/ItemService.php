@@ -1,9 +1,10 @@
 <?php
 
-namespace App\WMS\Templates\Abstracts;
+namespace App\WMS\Contracts;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Collection;
+use App\WMS\Build\AbstractBase;
 
 abstract class ItemService extends AbstractBase
 {
@@ -184,7 +185,7 @@ abstract class ItemService extends AbstractBase
     }
 
     /**
-     * 
+     * Representa el codigo de Rubro 
      */
     public function codItemClase1($model): ?string
     {
@@ -192,7 +193,7 @@ abstract class ItemService extends AbstractBase
     }
 
     /**
-     * 
+     * Representa el nombre del rubro
      */
     public function nomItemClase1($model): ?string
     {
@@ -200,7 +201,7 @@ abstract class ItemService extends AbstractBase
     }
 
     /**
-     * 
+     * Representa el codigo de sub-rubro
      */
     public function codItemClase2($model): ?string
     {
@@ -208,7 +209,7 @@ abstract class ItemService extends AbstractBase
     }
 
     /**
-     * 
+     * Representa el nombre del sub-rubro
      */
     public function nomItemClase2($model): ?string
     {
@@ -216,7 +217,7 @@ abstract class ItemService extends AbstractBase
     }
 
     /**
-     * 
+     * NO Representa nada 
      */
     public function codItemClase3($model): ?string
     {
@@ -224,7 +225,7 @@ abstract class ItemService extends AbstractBase
     }
 
     /**
-     * 
+     * NO Representa nada 
      */
     public function nomItemClase3($model): ?string
     {
@@ -232,7 +233,7 @@ abstract class ItemService extends AbstractBase
     }
 
     /**
-     * 
+     * NO Representa nada 
      */
     public function codItemClase4($model): ?string
     {
@@ -240,7 +241,7 @@ abstract class ItemService extends AbstractBase
     }
 
     /**
-     * 
+     * NO Representa nada 
      */
     public function nomItemClase4($model): ?string
     {
@@ -248,7 +249,7 @@ abstract class ItemService extends AbstractBase
     }
 
     /**
-     * 
+     * NO Representa nada 
      */
     public function codItemClase5($model): ?string
     {
@@ -256,7 +257,7 @@ abstract class ItemService extends AbstractBase
     }
 
     /**
-     * 
+     * NO Representa nada 
      */
     public function nomItemClase5($model): ?string
     {
@@ -264,7 +265,7 @@ abstract class ItemService extends AbstractBase
     }
 
     /**
-     * 
+     * NO Representa nada 
      */
     public function codItemClase6($model): ?string
     {
@@ -272,7 +273,7 @@ abstract class ItemService extends AbstractBase
     }
 
     /**
-     * 
+     * NO Representa nada 
      */
     public function nomItemClase6($model): ?string
     {
@@ -280,7 +281,7 @@ abstract class ItemService extends AbstractBase
     }
 
     /**
-     * 
+     * NO Representa nada 
      */
     public function codItemClase7($model): ?string
     {
@@ -288,7 +289,7 @@ abstract class ItemService extends AbstractBase
     }
 
     /**
-     * 
+     * NO Representa nada 
      */
     public function nomItemClase7($model): ?string
     {
@@ -296,7 +297,7 @@ abstract class ItemService extends AbstractBase
     }
 
     /**
-     * 
+     * NO Representa nada 
      */
     public function codItemClase8($model): ?string
     {
@@ -304,7 +305,7 @@ abstract class ItemService extends AbstractBase
     }
 
     /**
-     * 
+     * NO Representa nada 
      */
     public function nomItemClase8($model): ?string
     {
@@ -312,7 +313,7 @@ abstract class ItemService extends AbstractBase
     }
 
     /**
-     * 
+     * NO Representa nada 
      */
     public function itemCodigoBarra($model): ?Collection
     {

@@ -1,9 +1,10 @@
 <?php
 
-namespace App\WMS\Templates\Abstracts;
+namespace App\WMS\Contracts;
 
 use Illuminate\Http\JsonResponse;
 use stdClass;
+use App\WMS\Build\AbstractBase;
 
 abstract class OrdenEntradaDetalleService extends AbstractBase
 {

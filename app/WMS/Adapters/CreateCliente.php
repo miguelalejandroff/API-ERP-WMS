@@ -2,34 +2,40 @@
 
 namespace App\WMS\Adapters;
 
-use App\Models\cmclientes;
-use App\WMS\Build\Adapter;
-use App\WMS\Contracts\WMSClienteService;
-use App\WMS\Templates\Cliente;
+use App\WMS\Contracts\ClienteService;
 
-class CreateCliente extends Adapter implements WMSClienteService
+class CreateCliente extends ClienteService
 {
-    public function makeCliente(cmclientes $model): Cliente
+    protected function codCliente($model): string
     {
-        return new Cliente(
-            codCliente:  $model->aux_claves,
-            rutCliente:  "{$model->aux_numrut}-{$model->aux_digrut}",
-            nomCliente:  $model->aux_nombre,
-            razonSocial:  null,
-            nomCorto: null,
-            giroCliente: $model->aux_nacion,
-            direccion: $model->aux_direcc,
-            comuna: $model->comuna,
-            ciudad: $model->ciudad,
-            pais: null,
-            localidad: null,
-            telefono: $model->aux_telefo,
-            eMail: null,
-            contacto: null,
-            fillRate: null,
-            codTipo: 0,
-            b2B: "",
-            arraySucursal: [],
-        );
+        return  $model->aux_claves;
+    }
+    protected function rutCliente($model): string
+    {
+        return  "{$model->aux_numrut}-{$model->aux_digrut}";
+    }
+    protected function nomCliente($model): string
+    {
+        return $model->aux_nombre;
+    }
+    public function giroCliente($model): ?string
+    {
+        return  $model->aux_nacion;
+    }
+    public function direccion($model): ?string
+    {
+        return  $model->aux_direcc;
+    }
+    public function comuna($model): ?string
+    {
+        return  $model->comuna;
+    }
+    public function ciudad($model): ?string
+    {
+        return  $model->ciudad;
+    }
+    public function telefono($model): ?string
+    {
+        return $model->aux_telefo;
     }
 }

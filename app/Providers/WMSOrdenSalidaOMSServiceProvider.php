@@ -15,7 +15,7 @@ class WMSOrdenSalidaOMSServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->app->bind(WMSOrdenSalidaOMSService::class, CreateOrdenSalidaOMS::class);
+        //$this->app->bind(WMSOrdenSalidaOMSService::class, CreateOrdenSalidaOMS::class);
     }
 
     /**

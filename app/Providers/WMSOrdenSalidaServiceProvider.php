@@ -17,7 +17,7 @@ class WMSOrdenSalidaServiceProvider extends ServiceProvider
      */
     public function register()
     {
-
+/*
         $this->app->bind(WMSOrdenSalidaService::class, function ($app) {
             if ($app->request->solicitudGuia) {
                 $model = despachoencab::SolicitudGuia($app->request->solicitudGuia);
@@ -42,7 +42,7 @@ class WMSOrdenSalidaServiceProvider extends ServiceProvider
             }
             if ($app->request->notaDebito) {
             }
-        });
+        });*/
     }
 
     /**

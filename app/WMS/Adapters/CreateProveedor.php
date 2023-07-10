@@ -2,31 +2,40 @@
 
 namespace App\WMS\Adapters;
 
-use App\Models\cmclientes;
-use App\WMS\Build\Adapter;
-use App\WMS\Contracts\WMSProveedorService;
-use App\WMS\Templates\Proveedor;
+use App\WMS\Contracts\ProveedorService;
 
-class CreateProveedor extends Adapter implements WMSProveedorService
+class CreateProveedor extends ProveedorService
 {
-    public function makeProveedor(cmclientes $model): Proveedor
+    protected function codProveedor($model): string
     {
-        return new Proveedor(
-            codProveedor: $model->aux_claves,
-            rutProveedor: "{$model->aux_numrut}-{$model->aux_digrut}",
-            nomProveedor: $model->aux_nombre,
-            razonSocial: null,
-            nomCorto: null,
-            giroProveedor: $model->aux_nacion,
-            direccion: $model->aux_direcc,
-            comuna: $model->comuna,
-            ciudad: $model->ciudad,
-            pais: null,
-            localidad: null,
-            telefono: $model->aux_telefo,
-            eMail: null,
-            contacto: null,
-            fillRate: null
-        );
+        return $model->aux_claves;
+    }
+    protected function rutProveedor($model): string
+    {
+        return "{$model->aux_numrut}-{$model->aux_digrut}";
+    }
+    protected function nomProveedor($model): string
+    {
+        return $model->aux_nombre;
+    }
+    public function giroProveedor($model): ?string
+    {
+        return $model->aux_nacion;
+    }
+    public function direccion($model): ?string
+    {
+        return $model->aux_direcc;
+    }
+    public function comuna($model): ?string
+    {
+        return $model->comuna;
+    }
+    public function ciudad($model): ?string
+    {
+        return $model->ciudad;
+    }
+    public function telefono($model): ?string
+    {
+        return $model->aux_telefo;
     }
 }

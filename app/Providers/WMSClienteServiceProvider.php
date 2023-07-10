@@ -15,7 +15,7 @@ class WMSClienteServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->app->bind(WMSClienteService::class, CreateCliente::class);
+        //$this->app->bind(WMSClienteService::class, CreateCliente::class);
     }
 
     /**

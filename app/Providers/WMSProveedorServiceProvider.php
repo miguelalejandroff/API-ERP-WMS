@@ -15,7 +15,7 @@ class WMSProveedorServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->app->bind(WMSProveedorService::class, CreateProveedor::class);
+        //$this->app->bind(WMSProveedorService::class, CreateProveedor::class);
     }
 
     /**
