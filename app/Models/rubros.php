@@ -10,5 +10,7 @@ class rubros extends Model
     use HasFactory;
     protected $table = 'rubros';
 
+    protected $connection = 'informix';
+
     public $timestamps = false;
 }

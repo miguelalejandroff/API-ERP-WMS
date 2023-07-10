@@ -13,6 +13,8 @@ class guicompra extends Model
 
     protected $primaryKey = 'gui_clave';
 
+    protected $connection = 'informix';
+
     public $incrementing = true;
 
     public $timestamps = false;

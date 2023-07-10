@@ -13,6 +13,8 @@ class cmenlbon extends Model
 
     protected $primaryKey = 'bon_ordori';
 
+    protected $connection = 'informix';
+
     public $incrementing = false;
 
     public $timestamps = false;

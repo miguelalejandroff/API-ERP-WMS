@@ -10,5 +10,7 @@ class sucursalpororden extends Model
     use HasFactory;
     protected $table = 'sucursal_por_ordencompra';
 
+    protected $connection = 'informix';
+
     public $timestamps = false;
 }

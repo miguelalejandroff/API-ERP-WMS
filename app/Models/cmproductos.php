@@ -18,6 +18,8 @@ class cmproductos extends Model
 
     protected $primaryKey = ['pro_anomes', 'pro_codigo'];
 
+    protected $connection = 'informix';
+
     public $incrementing = false;
 
     public $timestamps = false;

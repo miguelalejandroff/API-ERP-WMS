@@ -13,6 +13,8 @@ class cmsalbod extends Model
 
     protected $primaryKey = ['bod_ano', 'bod_produc', 'bod_bodega'];
 
+    protected $connection = 'informix';
+
     public $incrementing = false;
 
     public $timestamps = false;

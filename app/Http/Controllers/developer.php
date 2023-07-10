@@ -11,6 +11,7 @@ use App\Models\cmproductos;
 use App\Models\cmsalbod;
 use App\Models\mongodb\Saldos;
 use App\Models\prueba;
+use App\Models\vpparsis;
 use App\WMS\Adapters\CreateItem;
 use App\WMS\Templates\Implements\CreateItem as ImplementsCreateItem;
 use App\WMS\Templates\Implements\OrdenCompraRecepcion;
@@ -31,6 +32,7 @@ class developer extends Controller
         //return prueba::get();
 
         $ordenBase = new OrdenCompraRecepcion(cmordcom::Orden(2304953));
+        dd(vpparsis::get());
         $newData = $ordenBase->getJson();
         dd($newData);
         dd(PdfDtes::send('81643200-6', 52, 974679, '2023-06-06', 940000, 0));

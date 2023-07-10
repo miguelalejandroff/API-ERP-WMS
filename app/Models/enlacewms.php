@@ -10,6 +10,8 @@ class enlacewms extends Model
     use HasFactory;
     protected $table = 'enlacewms';
 
+    protected $connection = 'informix';
+
     public $timestamps = false;
 
     public function cmproductos()

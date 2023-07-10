@@ -10,5 +10,7 @@ class vpparsis extends Model
     use HasFactory;
     protected $table = 'vpparsis';
 
+    protected $connection = 'informix';
+
     public $timestamps = false;
 }

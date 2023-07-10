@@ -13,6 +13,8 @@ class cmfacdet extends Model
 
     protected $primaryKey = ['fac_nrodoc', 'fac_tipdoc',  'fac_codpro'];
 
+    protected $connection = 'informix';
+
     public $incrementing = false;
 
     public $timestamps = false;

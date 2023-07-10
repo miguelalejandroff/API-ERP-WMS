@@ -13,6 +13,8 @@ class cmbodega extends Model
 
     protected $primaryKey = 'bod_codigo';
 
+    protected $connection = 'informix';
+
     public $incrementing = false;
 
     public $timestamps = false;

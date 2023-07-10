@@ -9,5 +9,7 @@ class cmsesion extends Model
 {
     use HasFactory;
     protected $table = 'cmsesion';
+
+    protected $connection = 'informix';
     public $timestamps = false;
 }

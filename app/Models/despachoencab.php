@@ -13,6 +13,8 @@ class despachoencab extends Model
 
     protected $primaryKey = ['des_folio', 'des_tipo', 'des_sucori', 'des_sucdes'];
 
+    protected $connection = 'informix';
+
     public $incrementing = false;
 
     public $timestamps = false;

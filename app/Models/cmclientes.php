@@ -13,6 +13,8 @@ class cmclientes extends Model
 
     protected $primaryKey = 'aux_claves';
 
+    protected $connection = 'informix';
+
     public $incrementing = false;
 
     public $timestamps = false;

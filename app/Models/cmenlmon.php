@@ -13,6 +13,8 @@ class cmenlmon extends Model
 
     protected $primaryKey = 'enl_ordcom';
 
+    protected $connection = 'informix';
+
     public $incrementing = false;
 
     public $timestamps = false;

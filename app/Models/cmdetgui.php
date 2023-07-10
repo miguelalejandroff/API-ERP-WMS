@@ -13,6 +13,8 @@ class cmdetgui extends Model
 
     protected $primaryKey = ['gui_numero', 'gui_tipgui',  'gui_produc'];
 
+    protected $connection = 'informix';
+
     public $incrementing = false;
 
     public $timestamps = false;

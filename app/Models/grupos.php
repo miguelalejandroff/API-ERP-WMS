@@ -10,5 +10,7 @@ class grupos extends Model
     use HasFactory;
     protected $table = 'grupos';
 
+    protected $connection = 'informix';
+
     public $timestamps = false;
 }

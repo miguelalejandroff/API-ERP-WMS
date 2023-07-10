@@ -12,6 +12,8 @@ class wmscmguias extends Model
 
     public $timestamps = false;
 
+    protected $connection = 'informix';
+
     protected $fillable = [
         'gui_numero',
         'gui_tipgui',

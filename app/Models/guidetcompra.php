@@ -13,6 +13,8 @@ class guidetcompra extends Model
 
     protected $primaryKey = ['gui_clave', 'gui_numero', 'gui_produc'];
 
+    protected $connection = 'informix';
+
     public $incrementing = false;
 
     public $timestamps = false;

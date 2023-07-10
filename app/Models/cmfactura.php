@@ -13,6 +13,8 @@ class cmfactura extends Model
 
     protected $primaryKey = ['fac_nrodoc', 'fac_tipdoc'];
 
+    protected $connection = 'informix';
+
     public $incrementing = false;
 
     public $timestamps = false;

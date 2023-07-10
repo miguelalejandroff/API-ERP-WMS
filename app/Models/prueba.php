@@ -12,4 +12,5 @@ class prueba extends Model
     protected $table = 'cron_reprocess';
 
     protected $connection = 'mysql';
+    
 }

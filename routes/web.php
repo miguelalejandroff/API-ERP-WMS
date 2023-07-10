@@ -32,7 +32,7 @@ Route::get('/', function () {
 /**
  * Grupo de rutas para ingresar o crear documentos en el WMS
  */
-Route::prefix('WMS')->middleware('database:informix')->group(function () {
+Route::prefix('WMS')->group(function () {
 
     //Route::get('developer', [developer::class, 'dev'])->name('developer');
     Route::post('CreateOrdenEntrada', [EndpointWMS::class, 'createOrdenEntrada']);
@@ -45,7 +45,7 @@ Route::prefix('WMS')->middleware('database:informix')->group(function () {
 /**
  * Grupo de rutas para ingresar o crear documentos en el ERP
  */
-Route::prefix('ERP')->middleware('tokenWMS', 'database:informix_dev_157')->group(function () {
+Route::prefix('ERP')->group(function () {
 
     /*Route::post('CreateOrdenEntrada', function (Request $request) {
         Log::append('CreateOrdenEntrdaERP', "{$request}");
@@ -56,18 +56,11 @@ Route::prefix('ERP')->middleware('tokenWMS', 'database:informix_dev_157')->group
     Route::post('CreateOrdenSalida', [EndpointERP::class, 'createOrdenSalida']);
 });
 
-/**
- * Grupo de rutas para realizar pruebas
- */
-Route::prefix('test')->middleware('database:informix_dev_157')->group(function () {
-
-    Route::get('CreateOrdenEntrada', [Test::class, 'createOrdenEntrada']);
-});
 
 /**
  * Grupo de rutas para desarrollar en la base 157
  */
-Route::prefix('dev')->middleware('database:informix_dev')->group(function () {
+Route::prefix('dev')->group(function () {
     //Route::get('pdf',[''])
     Route::get('developer', [developer::class, 'dev'])->name('developer');
     Route::post('guiaCompra', [GuiaCompra::class, '__construct'])->name('guiaCompra');

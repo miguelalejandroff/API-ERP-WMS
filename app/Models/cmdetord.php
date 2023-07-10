@@ -15,6 +15,8 @@ class cmdetord extends Model
 
     protected $primaryKey = ['ord_numcom', 'ord_produc'];
 
+    protected $connection = 'informix';
+
     public $incrementing = false;
 
     public $timestamps = false;

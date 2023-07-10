@@ -13,6 +13,8 @@ class cmguias extends Model
 
     protected $primaryKey = ['gui_numero', 'gui_tipgui'];
 
+    protected $connection = 'informix';
+
     public $incrementing = false;
 
     public $timestamps = false;

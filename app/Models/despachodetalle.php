@@ -13,6 +13,8 @@ class despachodetalle extends Model
 
     protected $primaryKey = ['des_folio', 'des_tipo', 'des_codigo'];
 
+    protected $connection = 'informix';
+
     public $incrementing = false;
 
     public $timestamps = false;

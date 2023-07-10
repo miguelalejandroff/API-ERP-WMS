@@ -13,6 +13,8 @@ class enlacepromo extends Model
 
     protected $primaryKey = 'codigo_origen';
 
+    protected $connection = 'informix';
+
     public $incrementing = false;
 
     public $timestamps = false;

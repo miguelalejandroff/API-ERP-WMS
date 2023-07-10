@@ -13,6 +13,8 @@ class cmordobs extends Model
 
     protected $primaryKey = 'ord_numord';
 
+    protected $connection = 'informix';
+
     public $incrementing = false;
 
     public $timestamps = false;

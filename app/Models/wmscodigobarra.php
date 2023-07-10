@@ -10,5 +10,7 @@ class wmscodigobarra extends Model
     use HasFactory;
     protected $table = 'wmscodigobarra';
 
+    protected $connection = 'informix';
+
     public $timestamps = false;
 }
