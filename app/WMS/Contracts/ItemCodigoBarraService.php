@@ -7,20 +7,6 @@ use App\WMS\Build\AbstractBase;
 
 abstract class ItemCodigoBarraService extends AbstractBase
 {
-    protected $fields = [
-        'codUnidadMedida',
-        'codItem',
-        'codigoBarra',
-        'alias',
-        'factor',
-        'ancho',
-        'largo',
-        'alto',
-        'peso',
-        'volumen',
-        'secuencia',
-    ];
-
     /**
      * 
      */

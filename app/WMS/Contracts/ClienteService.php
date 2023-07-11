@@ -7,27 +7,6 @@ use App\WMS\Build\AbstractBase;
 
 abstract class ClienteService extends AbstractBase
 {
-
-    protected $fields = [
-        'codCliente',
-        'rutCliente',
-        'nomCliente',
-        'razonSocial',
-        'nomCorto',
-        'giroCliente',
-        'direccion',
-        'comuna',
-        'ciudad',
-        'pais',
-        'localidad',
-        'telefono',
-        'eMail',
-        'contacto',
-        'fillRate',
-        'codTipo',
-        'b2B',
-    ];
-
     /**
      * Representa el CD, Site o Bodega a la cual se recibira la mercaderia
      */

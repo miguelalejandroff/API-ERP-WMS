@@ -8,25 +8,6 @@ use Illuminate\Http\JsonResponse;
 abstract class ProveedorService extends AbstractBase
 {
 
-    protected $fields = [
-        'codProveedor',
-        'rutProveedor',
-        'nomProveedor',
-        'razonSocial',
-        'nomCorto',
-        'giroProveedor',
-        'direccion',
-        'comuna',
-        'ciudad',
-        'pais',
-        'localidad',
-        'telefono',
-        'eMail',
-        'contacto',
-        'fillRate',
-    ];
-
-
     /**
      * Representa el CD, Site o Bodega a la cual se recibira la mercaderia
      */

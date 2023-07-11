@@ -9,34 +9,6 @@ use App\WMS\Build\AbstractBase;
 
 abstract class OrdenEntradaService extends AbstractBase
 {
-
-    protected $fields = [
-        'codDeposito',
-        'nroOrdenEntrada',
-        'nroReferencia',
-        'nroOrdenCliente',
-        'codTipo',
-        'codProveedor',
-        'codCliente',
-        'codSucursal',
-        'tipoDeCambio',
-        'fechaEstimadaRecepcion',
-        'fechaExpiracion',
-        'fechaEmisionERP',
-        'codDepositoOrigen',
-        'codDepositoOrigen2',
-        'observacion',
-        'origen',
-        'requiereVas',
-        'esCrossDocking',
-        'nroCrossDocking',
-        'codMoneda',
-        'ordenEntradaDetalle',
-        'proveedor',
-        'cliente'
-    ];
-
-
     /**
      * Representa la Bodega a la cual se recibira la mercaderia 
      */

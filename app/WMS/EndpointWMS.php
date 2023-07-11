@@ -13,6 +13,7 @@ class EndpointWMS
     }
     public function createItem(ItemService $item)
     {
+        dd($item->getJson());
         return WMS::post('WMS_Admin/CreateItem', $item->getJson());
     }
     public function createOrdenEntrada($orden)

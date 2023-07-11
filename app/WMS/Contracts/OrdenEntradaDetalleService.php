@@ -11,16 +11,6 @@ abstract class OrdenEntradaDetalleService extends AbstractBase
 
     private static $lineaActual = 0;
 
-    protected $fields = [
-        'codDeposito',
-        'nroOrdenEntrada',
-        'nroLinea',
-        'codItem',
-        'codMoneda',
-        'cantidadSolicitada',
-        'item'
-    ];
-
     public function __construct($model)
     {
         parent::__construct($model);

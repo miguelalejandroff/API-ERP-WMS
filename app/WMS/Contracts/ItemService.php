@@ -8,44 +8,6 @@ use App\WMS\Build\AbstractBase;
 
 abstract class ItemService extends AbstractBase
 {
-    protected $fields = [
-        'codItem',
-        'nomItem',
-        'codUnidadMedida',
-        'codItemAlternativo',
-        'nomAlternativo',
-        'controlaLote',
-        'controlaSerie',
-        'controlaExpiracion',
-        'controlaFabricacion',
-        'controlaVAS',
-        'controlaCantidad',
-        'codTipo',
-        'marca',
-        'origen',
-        'esPickeable',
-        'inspeccion',
-        'crossDocking',
-        'codItemClase1',
-        'nomItemClase1',
-        'codItemClase2',
-        'nomItemClase2',
-        'codItemClase3',
-        'nomItemClase3',
-        'codItemClase4',
-        'nomItemClase4',
-        'codItemClase5',
-        'nomItemClase5',
-        'codItemClase6',
-        'nomItemClase6',
-        'codItemClase7',
-        'nomItemClase7',
-        'codItemClase8',
-        'nomItemClase8',
-        'itemCodigoBarra'
-    ];
-
-
     /**
      * Representa el Codigo del Producto 
      */

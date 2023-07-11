@@ -17,13 +17,13 @@ class ItemServiceProvider extends ServiceProvider
     public function register()
     {
         $this->app->bind(ItemService::class, function ($app) {
+            
             if ($app->request->has('producto')) {
                 $model = cmproductos::sku($app->request->producto);
                 return new CreateItem($model);
             }
 
             throw new \Exception('El modelo no fue definido');
-            //return new CreateItem(null);
         });
     }
 
