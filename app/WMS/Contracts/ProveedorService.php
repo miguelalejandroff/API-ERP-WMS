@@ -122,7 +122,8 @@ abstract class ProveedorService extends AbstractBase
     public function getJson(): JsonResponse
     {
         return response()->json([
-            'codOwner' => parent::codOwner()
+            'codOwner' => parent::codOwner(),
+            'proveedor' => parent::get()
         ]);
     }
 }

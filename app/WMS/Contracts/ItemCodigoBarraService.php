@@ -8,7 +8,7 @@ use App\WMS\Build\AbstractBase;
 abstract class ItemCodigoBarraService extends AbstractBase
 {
     /**
-     * 
+     * Codigo de la unidad de medida dasociada al codigo de barras
      */
     public function codUnidadMedida($model): ?int
     {
@@ -16,22 +16,22 @@ abstract class ItemCodigoBarraService extends AbstractBase
     }
 
     /**
-     * 
+     * Codigo que identifica el item (SKU)
      */
     abstract protected function codItem($model): string;
 
     /**
-     * 
+     * codigo de barra del item (SKU), puede ser GTIN13, GTIN14, etc
      */
     abstract protected function codigoBarra($model): string;
 
     /**
-     * 
+     * Alias del codigo de barra, sino hay alias, se informa el mismo codigo de barras
      */
     abstract protected function alias($model): string;
 
     /**
-     * 
+     * Multiplo o factor de conversion del codigo de barra; por ejemplo: 1
      */
     public function factor($model): ?float
     {
@@ -39,7 +39,7 @@ abstract class ItemCodigoBarraService extends AbstractBase
     }
 
     /**
-     * 
+     * Maestro logistico: Indicador del ancho del producto que representa el codigo de barra
      */
     public function ancho($model): ?float
     {
@@ -47,7 +47,7 @@ abstract class ItemCodigoBarraService extends AbstractBase
     }
 
     /**
-     * 
+     * Maestro logistico: Indicador del largo del producto que representa el codigo de barra
      */
     public function largo($model): ?float
     {
@@ -55,7 +55,7 @@ abstract class ItemCodigoBarraService extends AbstractBase
     }
 
     /**
-     * 
+     * Maestro logistico: Indicador del alto del producto que representa el codigo de barra
      */
     public function alto($model): ?float
     {
@@ -63,7 +63,7 @@ abstract class ItemCodigoBarraService extends AbstractBase
     }
 
     /**
-     * 
+     * Maestro logistico: Indicador del peso del producto que representa el codigo de barra
      */
     public function peso($model): ?float
     {
@@ -71,7 +71,7 @@ abstract class ItemCodigoBarraService extends AbstractBase
     }
 
     /**
-     * 
+     * Maestro logistico: Indicador del volumen del producto que representa el codigo de barra
      */
     public function volumen($model): ?float
     {
@@ -79,7 +79,7 @@ abstract class ItemCodigoBarraService extends AbstractBase
     }
 
     /**
-     * 
+     * Secuencia o prioridad en los codigos de barra del item
      */
     public function secuencia($model): ?int
     {
@@ -89,7 +89,8 @@ abstract class ItemCodigoBarraService extends AbstractBase
     public function getJson(): JsonResponse
     {
         return response()->json([
-            'codOwner' => parent::codOwner()
+            'codOwner' => parent::codOwner(),
+            'itemCodigoBarra' => parent::get()
         ]);
     }
 }

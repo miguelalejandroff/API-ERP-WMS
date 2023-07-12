@@ -7,23 +7,24 @@ use App\WMS\Build\AbstractBase;
 
 abstract class ClienteService extends AbstractBase
 {
+
     /**
-     * Representa el CD, Site o Bodega a la cual se recibira la mercaderia
+     * Codigo unico de cliente en sistema origen
      */
     abstract protected function codCliente($model): string;
 
     /**
-     * Corresponde al numero unico del documento de ingreso
+     * Rut unico de cliente en sistema origen
      */
     abstract protected function rutCliente($model): string;
 
     /**
-     * Corresponde al numero unico del documento de ingreso
+     * Nombre del cliente
      */
     abstract protected function nomCliente($model): string;
 
     /**
-     * Corresponde al numero unico del documento de ingreso
+     * Razon social del cliente
      */
     public function razonSocial($model): ?string
     {
@@ -31,7 +32,7 @@ abstract class ClienteService extends AbstractBase
     }
 
     /**
-     * Corresponde al numero unico del documento de ingreso
+     * Nombre corto del cliente
      */
     public function nomCorto($model): ?string
     {
@@ -39,14 +40,15 @@ abstract class ClienteService extends AbstractBase
     }
 
     /**
-     * Corresponde al numero unico del documento de ingreso
+     * Giro del cliente
      */
     public function giroCliente($model): ?string
     {
         return null;
     }
+
     /**
-     * Corresponde al numero unico del documento de ingreso
+     * Dirccion principal o casa matriz del cliente
      */
     public function direccion($model): ?string
     {
@@ -54,7 +56,7 @@ abstract class ClienteService extends AbstractBase
     }
 
     /**
-     * Corresponde al numero unico del documento de ingreso
+     * Comuna de direccion del cliente
      */
     public function comuna($model): ?string
     {
@@ -62,7 +64,7 @@ abstract class ClienteService extends AbstractBase
     }
 
     /**
-     * Corresponde al numero unico del documento de ingreso
+     * Ciudad de direccion del cliente
      */
     public function ciudad($model): ?string
     {
@@ -70,7 +72,7 @@ abstract class ClienteService extends AbstractBase
     }
 
     /**
-     * Corresponde al numero unico del documento de ingreso
+     * Pais de direccion del cliente
      */
     public function pais($model): string
     {
@@ -78,7 +80,7 @@ abstract class ClienteService extends AbstractBase
     }
 
     /**
-     * Corresponde al numero unico del documento de ingreso
+     * Localidad de direccion del cliente
      */
     public function localidad($model): ?string
     {
@@ -86,7 +88,7 @@ abstract class ClienteService extends AbstractBase
     }
 
     /**
-     * Corresponde al numero unico del documento de ingreso
+     * Telefono del cliente
      */
     public function telefono($model): ?string
     {
@@ -94,7 +96,7 @@ abstract class ClienteService extends AbstractBase
     }
 
     /**
-     * Corresponde al numero unico del documento de ingreso
+     * Correo electronico del cliente
      */
     public function eMail($model): ?string
     {
@@ -102,7 +104,7 @@ abstract class ClienteService extends AbstractBase
     }
 
     /**
-     * Corresponde al numero unico del documento de ingreso
+     * Nombre de Contacto de Cliente
      */
     public function contacto($model): ?string
     {
@@ -110,14 +112,14 @@ abstract class ClienteService extends AbstractBase
     }
 
     /**
-     * Corresponde al numero unico del documento de ingreso
+     * % de Fill Rate al cliente
      */
     public function fillRate($model): int
     {
         return 0;
     }
     /**
-     * Corresponde al numero unico del documento de ingreso
+     * Tipo de cliente
      */
     public function codTipo($model): int
     {
@@ -125,7 +127,7 @@ abstract class ClienteService extends AbstractBase
     }
 
     /**
-     * Corresponde al numero unico del documento de ingreso
+     * Indica si cliente es de tipo B2B (Grandes Tiendas) "S" o "N"
      */
     public function b2B($model): ?string
     {
@@ -135,7 +137,8 @@ abstract class ClienteService extends AbstractBase
     public function getJson(): JsonResponse
     {
         return response()->json([
-            'codOwner' => parent::codOwner()
+            'codOwner' => parent::codOwner(),
+            'cliente' => parent::get()
         ]);
     }
 }

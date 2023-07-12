@@ -275,7 +275,7 @@ abstract class ItemService extends AbstractBase
     }
 
     /**
-     * NO Representa nada 
+     * Objeto que representa a los codigos de barra del item
      */
     public function itemCodigoBarra($model): ?Collection
     {

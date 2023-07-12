@@ -36,7 +36,7 @@ abstract class OrdenEntradaDetalleService extends AbstractBase
     abstract protected function nroOrdenEntrada($model): string;
 
     /**
-     * 
+     * Numero unico de linea de detalle de orden
      */
     public function nroLinea($model): string
     {
@@ -44,7 +44,7 @@ abstract class OrdenEntradaDetalleService extends AbstractBase
     }
 
     /**
-     * 
+     * Codigo de Item (SKU)
      */
     public function codItem($model): ?string
     {
@@ -52,21 +52,21 @@ abstract class OrdenEntradaDetalleService extends AbstractBase
     }
 
     /**
-     * Codigo de la moneda del documento
+     * Codigo interno de moneda de la Orden
      */
     public function codMoneda($model): string
     {
         return 1;
     }
     /**
-     * Codigo de la moneda del documento
+     * Cantidad original solicitada
      */
     public function cantidadSolicitada($model): ?int
     {
         return null;
     }
     /**
-     * Codigo de la moneda del documento
+     * Objeto que representa al item del producto
      */
     public function item($model)
     {
@@ -76,7 +76,10 @@ abstract class OrdenEntradaDetalleService extends AbstractBase
     public function getJson(): JsonResponse
     {
         return response()->json([
-            'codOwner' => parent::codOwner()
+            'codOwner' => parent::codOwner(),
+            'ordenEntradaDetalle' => [
+                parent::get()
+            ]
         ]);
     }
 }
