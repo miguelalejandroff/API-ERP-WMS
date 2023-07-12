@@ -9,10 +9,12 @@ use App\Models\cmguias;
 use App\Models\cmordcom;
 use App\Models\cmproductos;
 use App\Models\cmsalbod;
+use App\Models\guicompra;
 use App\Models\mongodb\Saldos;
 use App\Models\prueba;
 use App\Models\vpparsis;
 use App\WMS\Adapters\CreateItem;
+use App\WMS\Adapters\OrdenEntrada\GuiaCompra;
 use App\WMS\Adapters\OrdenEntrada\OrdenCompraRecepcion;
 use App\WMS\Templates\Implements\CreateItem as ImplementsCreateItem;
 use Carbon\Carbon;
@@ -32,7 +34,7 @@ class developer extends Controller
         //return prueba::get();
 
         //dd(vpparsis::get());
-        $ordenBase = new OrdenCompraRecepcion(cmordcom::Orden(2304953));
+        $ordenBase = new GuiaCompra(guicompra::Orden(2310884));
         $newData = $ordenBase->getJson();
         dd($newData);
         dd(PdfDtes::send('81643200-6', 52, 974679, '2023-06-06', 940000, 0));

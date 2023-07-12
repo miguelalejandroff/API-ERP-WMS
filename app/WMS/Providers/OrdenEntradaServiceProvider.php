@@ -3,7 +3,8 @@
 namespace App\WMS\Providers;
 
 use App\Models\cmordcom;
-use App\WMS\Adapters\OrdenEntrada\OrdenCompraRecepcion;
+use App\Models\guicompra;
+use App\WMS\Adapters\OrdenEntrada\GuiaCompra;
 use App\WMS\Contracts\OrdenEntradaService;
 use Illuminate\Support\ServiceProvider;
 use RuntimeException;
@@ -18,7 +19,15 @@ class OrdenEntradaServiceProvider extends ServiceProvider
     public function register()
     {
         $this->app->bind(OrdenEntradaService::class, function ($app) {
-
+            if ($app->request->guiaCompra) {
+                //guicompra
+                $model = guicompra::Orden($app->request->orden);
+                return new GuiaCompra($model);
+            }
+            if ($app->request->solicitudRecepcion) {
+                $model = cmordcom::Orden($app->request->orden);
+            }
+            /*
             if ($app->request->orden) {
                 $model = cmordcom::Orden($app->request->orden);
                 switch ($model->ord_tipcom) {
@@ -35,6 +44,7 @@ class OrdenEntradaServiceProvider extends ServiceProvider
                         throw new RuntimeException("Orden de Compra {$app->request->orden} No Existe ");
                 }
             }
+*/
             /*
             if ($app->request->notaCredito) {
                 $model = cmfactura::NotaCredito($app->request->notaCredito);

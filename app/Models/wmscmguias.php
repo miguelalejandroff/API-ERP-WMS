@@ -7,8 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class wmscmguias extends Model
 {
-    use HasFactory;
+    use HasFactory, HasCompositePrimaryKey;
+
     protected $table = 'wmscmguias';
+
+    protected $primaryKey = ['gui_numero', 'gui_tipgui'];
 
     public $timestamps = false;
 
@@ -33,4 +36,19 @@ class wmscmguias extends Model
         'gui_codusu',
         'gui_empres',
     ];
+
+    public function wmscmdetgui()
+    {
+        return $this->hasMany(wmscmdetgui::class, 'gui_numero', 'gui_numero');
+    }
+
+    public function cmclientes()
+    {
+        return $this->hasOne(cmclientes::class, 'aux_claves', 'gui_subcta');
+    }
+
+    public function ScopeOrden($query, $orden = null)
+    {
+        return $query->where('gui_numero', $orden)->first();
+    }
 }

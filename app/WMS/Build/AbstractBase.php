@@ -32,14 +32,16 @@ abstract class AbstractBase
         $newData->codOwner = $this->codOwner();
         //foreach ($this->fields as $field) {
         foreach (get_class_methods($this) as $field) {
-            
+
             if (in_array($field, $this->fieldsIgnored)) {
                 continue;
             }
 
             $data = $this->{$field}($this->model);
 
-            if (($data instanceof Collection and $data->filter(fn ($item) => !is_null($item))->isEmpty()) or !$data) {
+            if (($data instanceof Collection and $data->filter(fn ($item) => !is_null($item))->isEmpty())
+                or is_null($data) or (is_array($data) and count($data) == 0)
+            ) {
                 continue;
             }
 

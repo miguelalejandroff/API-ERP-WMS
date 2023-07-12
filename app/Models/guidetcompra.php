@@ -33,4 +33,9 @@ class guidetcompra extends Model
         "gui_preuni",
         "gui_saldo",
     ];
+    
+    public function cmproductos()
+    {
+        return $this->hasOne(cmproductos::class, 'pro_codigo', 'gui_produc')->where('pro_anomes', now()->format('Ym'));
+    }
 }

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class guicompra extends Model
 {
     use HasFactory;
-    
+
     protected $table = 'guicompra';
 
     protected $primaryKey = 'gui_clave';
@@ -39,4 +39,19 @@ class guicompra extends Model
         "gui_empres",
         "gui_current"
     ];
+
+    public function guidetcompra()
+    {
+        return $this->hasMany(guidetcompra::class, 'gui_clave', 'gui_clave');
+    }
+
+    public function cmclientes()
+    {
+        return $this->hasOne(cmclientes::class, 'aux_claves', 'gui_subcta');
+    }
+    
+    public function ScopeOrden($query, $orden = null)
+    {
+        return $query->where('gui_numero', $orden)->first();
+    }
 }
