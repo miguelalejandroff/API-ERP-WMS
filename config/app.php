@@ -208,8 +208,12 @@ return [
          * Servicios Para Enviar al WMS 
          */
 
-        App\WMS\Providers\OrdenEntradaServiceProvider::class,
+        App\WMS\Providers\ClienteServiceProvider::class,
+        App\WMS\Providers\ItemClaseServiceProvider::class,
+        App\WMS\Providers\ItemCodigoBarraServiceProvider::class,
         App\WMS\Providers\ItemServiceProvider::class,
+        App\WMS\Providers\OrdenEntradaServiceProvider::class,
+        App\WMS\Providers\ProveedorServiceProvider::class,
     ],
 
     /*

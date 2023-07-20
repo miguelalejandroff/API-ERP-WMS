@@ -34,26 +34,31 @@ Route::get('/', function () {
  */
 Route::prefix('WMS')->group(function () {
 
-    //Route::get('developer', [developer::class, 'dev'])->name('developer');
+    Route::post('CreateItem', [EndpointWMS::class, 'createItem']);
+
+    Route::post('CreateItemClase', [EndpointWMS::class, 'createItemClase']);
+    
+    Route::post('CreateItemCodigoBarra', [EndpointWMS::class, 'createItemCodigoBarra']);
+
+    Route::post('CreateCliente', [EndpointWMS::class, 'createCliente']);
+    
+    Route::post('CreateProveedor', [EndpointWMS::class, 'createProveedor']);
+
     Route::post('CreateOrdenEntrada', [EndpointWMS::class, 'createOrdenEntrada']);
 
     Route::post('CreateOrdenEntradaCambioEstado', function (Request $request) {
         return response()->json($request, 200, []);
     });
-    Route::post('CreateItem', [EndpointWMS::class, 'createItem']);
+    
 });
 /**
  * Grupo de rutas para ingresar o crear documentos en el ERP
  */
 Route::prefix('ERP')->group(function () {
 
-    /*Route::post('CreateOrdenEntrada', function (Request $request) {
-        Log::append('CreateOrdenEntrdaERP', "{$request}");
-        return response()->json($request, 200, []);
-    });*/
-    Route::post('CreateOrdenEntrada', [EndpointERP::class, 'createOrdenEntrada']);
+    Route::post('ConfirmarOrdenEntrada', [EndpointERP::class, 'createOrdenEntrada']);
 
-    Route::post('CreateOrdenSalida', [EndpointERP::class, 'createOrdenSalida']);
+    Route::post('ConfirmarOrdenSalida', [EndpointERP::class, 'createOrdenSalida']);
 });
 
 

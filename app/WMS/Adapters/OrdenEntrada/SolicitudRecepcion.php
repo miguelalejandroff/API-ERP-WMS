@@ -19,7 +19,7 @@ class SolicitudRecepcion extends OrdenEntradaService
 
     protected function nroOrdenEntrada($model): string
     {
-        return $model->ord_numcom;
+        return $model->gui_numero;
     }
 
     public function codTipo($model): string
@@ -29,13 +29,9 @@ class SolicitudRecepcion extends OrdenEntradaService
 
     public function codProveedor($model): string
     {
-        return  $model->ord_subcta;
+        return  $model->gui_subcta;
     }
 
-    public function observacion($model): string
-    {
-        return $model->cmordobs?->ord_observ;
-    }
     public function fechaEmisionERP($model): ?string
     {
         return  WMS::date($model->ord_fechac, 'Y-m-d');
@@ -53,22 +49,17 @@ class SolicitudRecepcion extends OrdenEntradaService
 
                 protected function nroOrdenEntrada($model): string
                 {
-                    return $model->ord_numcom;
+                    return $model->gui_numero;
                 }
 
                 public function codItem($model): string
                 {
-                    return $model->ord_produc;
-                }
-
-                public function codMoneda($model): string
-                {
-                    return $model->cmordcom->ord_moneda;
+                    return $model->gui_produc;
                 }
 
                 public function cantidadSolicitada($model): int
                 {
-                    return $model->calculaCosto->saldoCalculado;
+                    return $model->gui_canord;
                 }
 
                 public function item($model)

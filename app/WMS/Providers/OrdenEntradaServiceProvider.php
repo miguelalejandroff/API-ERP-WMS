@@ -2,9 +2,11 @@
 
 namespace App\WMS\Providers;
 
-use App\Models\cmordcom;
 use App\Models\guicompra;
+use App\Models\wmscmguias;
 use App\WMS\Adapters\OrdenEntrada\GuiaCompra;
+use App\WMS\Adapters\OrdenEntrada\GuiaRecepcion;
+use App\WMS\Adapters\OrdenEntrada\SolicitudRecepcion;
 use App\WMS\Contracts\OrdenEntradaService;
 use Illuminate\Support\ServiceProvider;
 use RuntimeException;
@@ -20,12 +22,16 @@ class OrdenEntradaServiceProvider extends ServiceProvider
     {
         $this->app->bind(OrdenEntradaService::class, function ($app) {
             if ($app->request->guiaCompra) {
-                //guicompra
-                $model = guicompra::Orden($app->request->orden);
+                $model = guicompra::Orden($app->request->guiaCompra);
                 return new GuiaCompra($model);
             }
+            if ($app->request->guiaRecepcion) {
+                $model = wmscmguias::Orden($app->request->guiaRecepcion);
+                return new GuiaRecepcion($model);
+            }
             if ($app->request->solicitudRecepcion) {
-                $model = cmordcom::Orden($app->request->orden);
+                $model = wmscmguias::Orden($app->request->solicitudRecepcion);
+                return new SolicitudRecepcion($model);
             }
             /*
             if ($app->request->orden) {
@@ -45,36 +51,6 @@ class OrdenEntradaServiceProvider extends ServiceProvider
                 }
             }
 */
-            /*
-            if ($app->request->notaCredito) {
-                $model = cmfactura::NotaCredito($app->request->notaCredito);
-                switch ($model->fac_tipdoc) {
-                    case '13':
-                        return new NotaCredito($model);
-                    case '19':
-                        return new NotaCredito($model);
-                    case '37':
-                        return new NotaCredito($model);
-                    case '38':
-                        return new NotaCredito($model);
-                    default:
-                        throw new RuntimeException("Nota Credito {$app->request->notaCredito} No Existe ");
-                }
-            }
-
-            if ($app->request->guia) {
-                $model = cmguias::Guia($app->request->guia);
-                switch ($model->fac_tipdoc) {
-                    case '05':
-                        return new Guia($model);
-                    case '06':
-                        return new Guia($model);
-                    case '11':
-                        return new Guia($model);
-                    default:
-                        throw new RuntimeException("Guia {$app->request->guia} No Existe ");
-                }
-            }*/
         });
     }
 

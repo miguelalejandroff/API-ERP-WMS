@@ -7,8 +7,17 @@ use App\WMS\Build\AbstractBase;
 
 abstract class ItemCodigoBarraService extends AbstractBase
 {
+
+    private static $lineaActual = 0;
+
+    public function __construct($model)
+    {
+        parent::__construct($model);
+
+        self::$lineaActual++;
+    }
     /**
-     * Codigo de la unidad de medida dasociada al codigo de barras
+     * Codigo de la unidad de medida asociada al codigo de barras
      */
     public function codUnidadMedida($model): ?int
     {
@@ -83,7 +92,7 @@ abstract class ItemCodigoBarraService extends AbstractBase
      */
     public function secuencia($model): ?int
     {
-        return 1;
+        return self::$lineaActual;
     }
 
     public function getJson(): JsonResponse

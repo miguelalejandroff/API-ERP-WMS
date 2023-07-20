@@ -16,6 +16,18 @@ use Illuminate\Support\Facades\DB;
 
 class OrdenCompraRecepcion extends Adapter implements ERPOrdenEntradaService
 {
+    private $observers = [];
+    /*
+    public function addObserver(OrdenObserver $observer)
+    {
+        $this->observers[] = $observer;
+    }
+    private function notify($ordenCompra)
+    {
+        foreach ($this->observers as $observer) {
+            $observer->handle($ordenCompra);
+        }
+    }*/
     public function run($recepcion, $recepcionDetalle, $trackingId)
     {
         Log::info('/OrdenCompraRececpcion', json_encode($recepcion), $trackingId);

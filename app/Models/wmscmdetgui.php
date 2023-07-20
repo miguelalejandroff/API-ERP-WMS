@@ -29,7 +29,6 @@ class wmscmdetgui extends Model
         'gui_preuni',
     ];
 
-
     public function cmproductos()
     {
         return $this->hasOne(cmproductos::class, 'pro_codigo', 'gui_produc')->where('pro_anomes', now()->format('Ym'));

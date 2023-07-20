@@ -49,6 +49,6 @@ class wmscmguias extends Model
 
     public function ScopeOrden($query, $orden = null)
     {
-        return $query->where('gui_numero', $orden)->first();
+        return $query->where('gui_numero', $orden)->where('gui_tipgui', '08')->first();
     }
 }
