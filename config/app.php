@@ -214,6 +214,11 @@ return [
         App\WMS\Providers\ItemServiceProvider::class,
         App\WMS\Providers\OrdenEntradaServiceProvider::class,
         App\WMS\Providers\ProveedorServiceProvider::class,
+        
+        /*
+         * Servicios Para Enviar al ERP 
+         */
+        App\ERP\Providers\OrdenEntradaServiceProvider::class
     ],
 
     /*

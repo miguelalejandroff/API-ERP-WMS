@@ -30,27 +30,17 @@ class OrdenEntradaServiceProvider extends ServiceProvider
                 return new GuiaRecepcion($model);
             }
             if ($app->request->solicitudRecepcion) {
-                $model = wmscmguias::Orden($app->request->solicitudRecepcion);
-                return new SolicitudRecepcion($model);
-            }
-            /*
-            if ($app->request->orden) {
-                $model = cmordcom::Orden($app->request->orden);
-                switch ($model->ord_tipcom) {
-                    case 'E':
-                        return new OrdenCompraRecepcion($model);
-                    case 'B':
-                        $model = cmordcom::Orden($model->cmenlori?->bon_ordori);
 
-                        if ($model) {
-                            return new OrdenCompraRecepcion($model);
-                        }
+                /**
+                 * Buscar la solicitud de recepción basada en la solicitud entrante.
+                 */
+                $solicitudRecepcion = wmscmguias::solicitudesPromo($app->request->solicitudRecepcion);
 
-                    default:
-                        throw new RuntimeException("Orden de Compra {$app->request->orden} No Existe ");
-                }
+                /**
+                 * Devolver una nueva instancia de SolicitudRecepcion con la solicitud de recepción que incluye los detalles combinados.
+                 */
+                return new SolicitudRecepcion($solicitudRecepcion);
             }
-*/
         });
     }
 

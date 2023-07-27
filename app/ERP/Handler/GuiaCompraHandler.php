@@ -8,65 +8,114 @@ use App\Libs\WMS;
 use App\Models\guicompra;
 use App\Models\guidetcompra;
 use Exception;
+use Illuminate\Support\Facades\DB;
 
 /**
- * Clase para manejar la creación de guías de compra a partir de la recepción de mercancía
+ * Clase GuiaCompraHandler
+ * 
+ * Esta clase se encarga de manejar la creación de guías de compra basándose en la información de la recepción de mercancía.
+ * Hereda de la clase Handler.
  */
 class GuiaCompraHandler extends Handler
 {
 
+    /**
+     * @var string $tipoGuia define el tipo de guía de compra. Por defecto es "07".
+     */
     private $tipoGuia = "07";
 
+    /**
+     * @var string $bodegaOrigen define el ID de la bodega de origen. Por defecto es 0.
+     */
     private $bodegaOrigen  = 0;
 
+    /**
+     * @var string $bodegaDestino define el ID de la bodega de destino. Por defecto es 29.
+     */
     private $bodegaDestino  = 29;
 
+    /**
+     * @var string $sucursalOrigen define el ID de la sucursal de origen. Por defecto es 0.
+     */
     private $sucursalOrigen = 0;
 
+    /**
+     * @var string $sucursalDestino define el ID de la sucursal de destino. Por defecto es 1.
+     */
     private $sucursalDestino = 1;
 
+    /**
+     * @var string $parametro define un parámetro de defecto. Por defecto es "N".
+     */
     private $parametro = "N";
 
+    /**
+     * @var string $empresa define el ID de la empresa. Por defecto es 1.
+     */
     private $empresa = 1;
 
+    /**
+     * @var string $ordenCompra define la orden de compra.
+     */
+    private $ordenCompra;
+
+    /**
+     * @var string $solicitudRecepcion  define la solicitud de recepción creada por el ERP.
+     */
+    private $solicitudRecepcion;
+
+    /**
+     * @var string $recepcion define la recepción creada por el WMS.
+     */
+    private $recepcion;
+
+    /**
+     * @var string $proveedor define el proveedor.
+     */
+    private $proveedor;
+
+    /**
+     * Método handle
+     * 
+     * Este método maneja la lógica principal de la creación de la guía de compra. 
+     * Recibe un objeto contexto que contiene información relevante para la creación de la guía.
+     * 
+     * @param object $context objeto que contiene la orden de compra, la solicitud de recepción, la recepción y el proveedor.
+     */
     public function handle($context)
     {
 
-        $ordenCompra = $context->ordenCompra;
+        DB::beginTransaction();
+        try {
+            $ordenCompra = $context->ordenCompra;
 
-        $solicitudRecepcion = $context->solicitudRecepcion;
+            $solicitudRecepcion = $context->solicitudRecepcion;
 
-        $recepcion = $context->recepcion;
+            $recepcion = $context->recepcion;
 
-        $proveedor = $context->proveedor;
+            $proveedor = $context->proveedor;
 
-        $guiaCompra = guicompra::where('gui_ordcom', $ordenCompra->ord_numcom)->where('gui_tipgui', $this->tipoGuia)->first();
+            $guiaCompra = guicompra::where('gui_ordcom', $ordenCompra->ord_numcom)->where('gui_tipgui', $this->tipoGuia)->first();
+            if (!$guiaCompra) {
 
-        if (!$guiaCompra) {
+                $encabezado =  $this->insertEncabezado($solicitudRecepcion, $recepcion, $ordenCompra, $proveedor);
+                foreach ($ordenCompra->cmdetord as &$row) {
+                    $producto = $row->producto;
+                    // Si el rubro del producto es igual a 3
+                    //if ($producto->productoClase->codigoRubro == '3') {
+                    /*$ord_cantid = Cmdetord::where('ord_produc', $tmp_gc->produc_gc)
+                                          ->where('ord_numcom', $guias->gui_ordcom)
+                                          ->first()->ord_cantid;
 
-            $encabezado =  $this->insertEncabezado($solicitudRecepcion, $recepcion, $ordenCompra, $proveedor);
+                    if ($tmp_gc->canord_gc != $ord_cantid) {
+                        $tmp_gc->canord_gc = $ord_cantid;
+                    }*/
+                    //}
 
-            foreach ($ordenCompra->cmdetord as $row) {
-                /*if ($row->cmproducto->rubro == "3") {
-                    $cantid_ord = 0;
-
-                    // Asume que tienes una conexión a la base de datos configurada y lista para usar.
-                    // Este es solo un ejemplo, probablemente necesites ajustarlo para tu situación específica.
-
-                    // $query = $db->prepare("SELECT ord_cantid FROM cmdetord WHERE ord_produc = :produc_gc AND ord_numcom = :gui_ordcom");
-                    // $query->execute([':produc_gc' => $produc_gc, ':gui_ordcom' => $guias['gui_ordcom']]);
-                    // $result = $query->fetch(PDO::FETCH_ASSOC);
-
-                    if ($result) {
-                        $cantid_ord = $result['ord_cantid'];
-                    }
-
-                    if ($canord_gc != $cantid_ord) {
-                        $canord_gc = $cantid_ord;
-                    }
-                }*/
-                $detalle = $this->insertDetalle($encabezado->gui_clave, $row);
-                /*
+                    $detalle = $this->insertDetalle($encabezado->gui_clave, $row);
+                    dd($detalle);
+                    throw new Exception("hola", 500);
+                    /*
                 $productoRecepcion = $recepcion->detalle->filter(function ($item) use ($detalle) {
                     return $item->codigoProducto == $detalle->gui_produc;
                 })->first();
@@ -89,76 +138,99 @@ class GuiaCompraHandler extends Handler
                     }
                 );
                 */
+                }
             }
-        }
-
-        foreach ($recepcion->detalle as $row) {
-            guidetcompra::where('gui_numero', $recepcion->numeroOrden)
-                ->where('gui_tipgui', $this->tipoGuia)
-                ->where('gui_produc', $row->codigoProducto)
-                ->decrement('gui_saldo', $row->cantidadRecepcionada);
+            foreach ($recepcion->detalle as $row) {
+                guidetcompra::where('gui_numero', $recepcion->numeroOrden)
+                    ->where('gui_tipgui', $this->tipoGuia)
+                    ->where('gui_produc', $row->codigoProducto)
+                    ->decrement('gui_saldo', $row->cantidadRecepcionada);
+            }
+        } catch (Exception $e) {
+            DB::rollBack();
+            dd($e);
         }
     }
 
     /**
-     * Inserta un encabezado de guía de compra en la base de datos
-     *
-     * @param mixed $solicitudRecepcion Objeto que representa la recepción de la mercancía
-     * @param mixed $recepcion Objeto que representa la recepción de la mercancía
-     * @param mixed $orden Objeto que representa la orden de compra
-     * @param mixed $proveedor Objeto que representa el proveedor
-     *
-     * @return mixed El encabezado de la guía de compra insertado
+     * Método insertEncabezado
+     * 
+     * Este método inserta un encabezado de la guía de compra en la base de datos.
+     * 
+     * @param object $solicitudRecepcion objeto que representa la solicitud de recepción creada por el ERP.
+     * @param object $recepcion objeto que representa la recepción creada por el WMS.
+     * @param object $ordenCompra objeto que representa la orden de compra.
+     * @param object $proveedor objeto que representa el proveedor.
+     * 
+     * @return object retorna el encabezado de la guía de compra que fue insertado en la base de datos.
      */
-    public function insertEncabezado($solicitudRecepcion, $recepcion, $orden, $proveedor)
+    public function insertEncabezado($solicitudRecepcion, $recepcion, $ordenCompra, $proveedor)
     {
 
-        return guicompra::create([
-            "gui_numero" => $orden->ord_numcom,
-            "gui_tipgui" => $this->tipoGuia,
-            "gui_fechag" => WMS::date($recepcion->fechaRecepcionWMS, WMS::DATE_FORMAT_WMS, WMS::DATE_FORMAT_DATE),
-            "gui_ordcom" => $orden->ord_numcom,
-            "gui_numrut" => $proveedor->aux_numrut,
-            "gui_digrut" => $proveedor->aux_digrut,
-            "gui_subcta" => $proveedor->aux_claves,
-            "gui_nombre" => $proveedor->aux_nombre,
-            "gui_guipro" => $solicitudRecepcion->gui_guipro,
-            "gui_facpro" => $solicitudRecepcion->gui_facpro,
-            "gui_facals" => $solicitudRecepcion->gui_facals,
-            "gui_sucori" => $this->sucursalOrigen,
-            "gui_sucdes" => $this->sucursalDestino, //cmbodega::Bodega($wms->bodegaDestino)->bod_codsuc,
-            "gui_paract" => $this->parametro,
-            "gui_fecmod" => WMS::date($recepcion->fechaRecepcionWMS, WMS::DATE_FORMAT_WMS, WMS::DATE_FORMAT_DATE),
-            "gui_codusu" => $solicitudRecepcion->gui_codusu,
-            "gui_empres" => $this->empresa,
-            "gui_current" => WMS::date($recepcion->fechaRecepcionWMS, WMS::DATE_FORMAT_WMS, WMS::DATE_FORMAT_CURRENT),
-        ]);
+        $guiaCompra = new guicompra;
+
+        $guiaCompra->gui_numero = $ordenCompra->ord_numcom;
+        $guiaCompra->gui_tipgui = $this->tipoGuia;
+        $guiaCompra->gui_fechag = $recepcion->fechaRecepcionWMS->format('Y-m-d');
+        $guiaCompra->gui_ordcom = $ordenCompra->ord_numcom;
+
+        $guiaCompra->gui_numrut = $proveedor->aux_numrut;
+        $guiaCompra->gui_digrut = $proveedor->aux_digrut;
+        $guiaCompra->gui_subcta = $proveedor->aux_claves;
+        $guiaCompra->gui_nombre = $proveedor->aux_nombre;
+
+        $guiaCompra->gui_guipro = $solicitudRecepcion->gui_guipro ?? 0;
+        $guiaCompra->gui_facpro = $solicitudRecepcion->gui_facpro ?? 0;
+        $guiaCompra->gui_facals = $solicitudRecepcion->gui_facals ?? 0;
+
+        $guiaCompra->gui_sucori = $this->sucursalOrigen;
+        $guiaCompra->gui_sucdes = $this->sucursalDestino;
+
+        $guiaCompra->gui_paract = $this->parametro;
+        $guiaCompra->gui_fecmod = $recepcion->fechaRecepcionWMS->format('Y-m-d');
+        $guiaCompra->gui_codusu = $solicitudRecepcion->gui_codusu;
+        $guiaCompra->gui_empres = $this->empresa;
+
+        $guiaCompra->gui_current = $recepcion->fechaRecepcionWMS->format('Y-m-d H:i');
+
+        $guiaCompra->save();
+
+        return $guiaCompra;
     }
 
 
     /**
-     * Inserta un detalle de guía de compra en la base de datos
-     *
-     * @param int $id Identificador de la guía de compra
-     * @param mixed $row Fila de la orden de compra
-     *
-     * @return mixed El detalle de la guía de compra insertado
+     * Método insertDetalle
+     * 
+     * Este método inserta un detalle de la guía de compra en la base de datos.
+     * 
+     * @param int $id identificador de la guía de compra.
+     * @param object $row fila de la orden de compra.
+     * 
+     * @return object retorna el detalle de la guía de compra que fue insertado en la base de datos.
      */
     public function insertDetalle($id,  $row)
     {
-        return guidetcompra::create([
-            "gui_clave" => $id,
-            "gui_numero" => $row->ord_numcom,
-            "gui_tipgui" => $this->tipoGuia,
-            "gui_bodori" => $this->bodegaOrigen,
-            "gui_boddes" => $this->bodegaDestino,
-            "gui_produc" => $row->ord_produc,
-            "gui_descri" => $row->ord_descri,
-            "gui_unimed" => $row->ord_unimed,
-            "gui_canord" => $row->calculaCosto->cantidadCalculada,
-            "gui_canrep" => $row->calculaCosto->cantidadCalculada,
-            "gui_preuni" => $row->calculaCosto->precioCalculado,
-            "gui_saldo" => $row->calculaCosto->cantidadCalculada,
-        ]);
+        $detalleCompra = new guidetcompra();
+
+        $detalleCompra->gui_clave = $id;
+        $detalleCompra->gui_numero = $row->ord_numcom;
+        $detalleCompra->gui_tipgui = $this->tipoGuia;
+
+        $detalleCompra->gui_bodori = $this->bodegaOrigen;
+        $detalleCompra->gui_boddes = $this->bodegaDestino;
+
+        $detalleCompra->gui_produc = $row->ord_produc;
+        $detalleCompra->gui_descri = $row->ord_descri;
+        $detalleCompra->gui_unimed = $row->ord_unimed;
+
+        $detalleCompra->gui_canord = $row->calculaCosto->cantidadCalculada;
+        $detalleCompra->gui_canrep = $row->calculaCosto->cantidadCalculada;
+        $detalleCompra->gui_preuni = $row->calculaCosto->precioCalculado;
+        $detalleCompra->gui_saldo = $row->calculaCosto->cantidadCalculada;
+
+        $detalleCompra->save();
+
+        return $detalleCompra;
     }
 }

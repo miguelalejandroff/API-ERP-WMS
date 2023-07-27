@@ -32,7 +32,7 @@ Route::get('/', function () {
 /**
  * Grupo de rutas para ingresar o crear documentos en el WMS
  */
-Route::prefix('WMS')->group(function () {
+Route::prefix('WMS')->middleware('tokenWMS')->group(function () {
 
     Route::post('CreateItem', [EndpointWMS::class, 'createItem']);
 
@@ -54,18 +54,25 @@ Route::prefix('WMS')->group(function () {
 /**
  * Grupo de rutas para ingresar o crear documentos en el ERP
  */
-Route::prefix('ERP')->group(function () {
+Route::prefix('ERP')->middleware('tokenWMS')->group(function () {
 
-    Route::post('ConfirmarOrdenEntrada', [EndpointERP::class, 'createOrdenEntrada']);
+    Route::post('ConfirmarOrdenEntrada', [EndpointERP::class, 'confirmarOrdenEntrada']);
 
-    Route::post('ConfirmarOrdenSalida', [EndpointERP::class, 'createOrdenSalida']);
+    Route::post('ConfirmarOrdenEntrada2', [EndpointERP::class, 'confirmarOrdenEntrada2']);
+
+    Route::post('GetTraspasoEntreBodegaInterna', [EndpointERP::class, 'GetTraspasoEntreBodegaInterna']);
+
+    Route::post('GetAjustesInventario', [EndpointERP::class, 'GetAjustesInventario']);
+
+    Route::post('ConfirmarOrdenSalida', [EndpointERP::class, 'confirmarOrdenSalida']);
+    
 });
 
 
 /**
  * Grupo de rutas para desarrollar en la base 157
  */
-Route::prefix('dev')->group(function () {
+Route::prefix('dev')->middleware('tokenWMS')->group(function () {
     //Route::get('pdf',[''])
     Route::get('developer', [developer::class, 'dev'])->name('developer');
     Route::post('guiaCompra', [GuiaCompra::class, '__construct'])->name('guiaCompra');

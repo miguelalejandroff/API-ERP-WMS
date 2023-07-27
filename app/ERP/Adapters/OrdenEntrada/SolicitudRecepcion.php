@@ -1,33 +1,32 @@
 <?php
 
 namespace App\ERP\Adapters\OrdenEntrada;
-
-use App\ERP\Build\Adapter;
-use App\ERP\Contracts\ERPOrdenEntradaService;
+use App\ERP\Contracts\OrdenEntradaService;
 use App\ERP\Handler\GuiaCompraHandler;
-use App\Models\cmclientes;
+use Exception;
 use Illuminate\Support\Facades\DB;
 
-class SolicitudRecepcion
+class SolicitudRecepcion implements OrdenEntradaService
 {
     protected $handlers = [];
+    protected $context;
 
-    public function __construct()
+    public function __construct($context)
     {
+        $this->context = $context;
+
         $this->handlers = [
             new GuiaCompraHandler(),
         ];
     }
-    public function run($model)
+    public function run()
     {
         DB::beginTransaction();
         try {
-            /*$context = new Context($ordenCompra);
-
             foreach ($this->handlers as $handler) {
-                $handler->execute($context);
-            }*/
-        } catch (\Exception $e) {
+                $handler->execute($this->context);
+            }
+        } catch (Exception $e) {
             DB::rollBack();
         }
     }

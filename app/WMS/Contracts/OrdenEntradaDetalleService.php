@@ -14,7 +14,6 @@ abstract class OrdenEntradaDetalleService extends AbstractBase
     public function __construct($model)
     {
         parent::__construct($model);
-
         self::$lineaActual++;
     }
 
@@ -54,7 +53,7 @@ abstract class OrdenEntradaDetalleService extends AbstractBase
     /**
      * Codigo interno de moneda de la Orden
      */
-    public function codMoneda($model): string
+    public function codMoneda($model): int
     {
         return 1;
     }
@@ -62,13 +61,6 @@ abstract class OrdenEntradaDetalleService extends AbstractBase
      * Cantidad original solicitada
      */
     public function cantidadSolicitada($model): ?int
-    {
-        return null;
-    }
-    /**
-     * Objeto que representa al item del producto
-     */
-    public function item($model)
     {
         return null;
     }

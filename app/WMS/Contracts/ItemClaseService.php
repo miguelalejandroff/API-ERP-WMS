@@ -33,7 +33,7 @@ abstract class ItemClaseService extends AbstractBase
         return response()->json([
             'codOwner' => parent::codOwner(),
             'codTipoItemClase' => $aliasMappings[$alias] ?? null, // 1 para rubro y 2 para subRubro
-            'itemClase' => parent::get()
+            'itemClase' => [parent::get()]
         ]);
     }
 }

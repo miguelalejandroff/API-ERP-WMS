@@ -24,7 +24,7 @@ class GetRubroAndGroup implements CastsAttributes
     public function get($model, string $key, $value, array $attributes)
     {
         $array = str_split($attributes['pro_newcod']);
-        
+
         $rubros = rubros::where('cod_rubro', $array[0])->first();
 
         $this->codigoRubro = $rubros?->cod_rubro;
@@ -32,7 +32,7 @@ class GetRubroAndGroup implements CastsAttributes
 
         $grupo = grupos::where('cod_rubro', $array[0])->where('cod_grupo', $array[1])->first();
 
-        $this->codigoGrupo = $grupo?->cod_grupo;
+        $this->codigoGrupo = $grupo?->cod_rg;
         $this->nombreGrupo = $grupo?->grupo;
 
         return $this;
