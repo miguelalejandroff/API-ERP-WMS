@@ -14,6 +14,7 @@ use Exception;
 use Illuminate\Support\ServiceProvider;
 use RuntimeException;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 class OrdenEntradaServiceProvider extends ServiceProvider
 {
@@ -28,7 +29,6 @@ class OrdenEntradaServiceProvider extends ServiceProvider
          * Vincula la interfaz OrdenEntradaService a una función anónima que resuelve la implementación.
          */
         $this->app->bind(OrdenEntradaService::class, function ($app) {
-
             /**
              * Crea un objeto de contexto para mantener los datos relevantes.
              */
@@ -37,6 +37,11 @@ class OrdenEntradaServiceProvider extends ServiceProvider
                 'recepcion' => (object)$app->request->all()
             ];
 
+
+            Log::info('Request Logged:', [
+                'context' => $context,
+            ]);
+            
             $context->recepcion->fechaRecepcionWMS = Carbon::parse($context->recepcion->fechaRecepcionWMS);
 
             /**

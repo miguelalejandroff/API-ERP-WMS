@@ -2,6 +2,7 @@
 
 namespace App\WMS\Providers;
 
+use App\Models\cmguias;
 use App\Models\guicompra;
 use App\Models\wmscmguias;
 use App\WMS\Adapters\OrdenEntrada\GuiaCompra;
@@ -26,7 +27,7 @@ class OrdenEntradaServiceProvider extends ServiceProvider
                 return new GuiaCompra($model);
             }
             if ($app->request->guiaRecepcion) {
-                $model = wmscmguias::Orden($app->request->guiaRecepcion);
+                $model = cmguias::Orden($app->request->guiaRecepcion);
                 return new GuiaRecepcion($model);
             }
             if ($app->request->solicitudRecepcion) {

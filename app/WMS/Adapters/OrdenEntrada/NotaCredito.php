@@ -9,25 +9,22 @@ use App\WMS\Contracts\OrdenEntradaDetalleService;
 use App\WMS\Contracts\OrdenEntradaService;
 use Illuminate\Support\Collection;
 
-/**
- * Clase que representa la Guia de Recepcion, 
- */
-class GuiaRecepcion extends OrdenEntradaService
+class NotaCredito extends OrdenEntradaService
 {
 
     protected function codDeposito($model): string
     {
-        return $model->cmdetgui->first()->gui_bodori;
+        return $model->fac_codbod;
     }
 
     protected function nroOrdenEntrada($model): string
     {
-        return $model->gui_numero;
+        return $model->fac_nrodoc;
     }
 
     public function codTipo($model): string
     {
-        return 8;
+        return 15;
     }
 
     public function codProveedor($model): string
@@ -37,27 +34,17 @@ class GuiaRecepcion extends OrdenEntradaService
 
     public function fechaEmisionERP($model): ?string
     {
-        return  WMS::date($model->gui_fechag, 'Y-m-d');
-    }
-
-    public function codDepositoOrigen($model): ?string
-    {
-        return $model->cmdetgui->first()->gui_boddes;
-    }
-
-    public function nroOrdenCliente($model): ?string
-    {
-        return $model->gui_ordcom;
+        return  WMS::date($model->fac_fecdoc, 'Y-m-d');
     }
 
     public function ordenEntradaDetalle($model): Collection
     {
-        return  $model->cmdetgui->map(function ($model) {
+        return  $model->wmscmdetgui->map(function ($model) {
             $detalle = new class($model) extends OrdenEntradaDetalleService
             {
                 protected function codDeposito($model): string
                 {
-                    return $model->gui_bodori;
+                    return "02";
                 }
 
                 protected function nroOrdenEntrada($model): string

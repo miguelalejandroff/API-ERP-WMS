@@ -5,6 +5,7 @@ namespace App\ERP;
 use App\ERP\Adapters\OrdenEntrada\Guia;
 use App\ERP\Adapters\OrdenEntrada\NotaCredito;
 use App\ERP\Adapters\OrdenEntrada\OrdenCompraRecepcion;
+use App\ERP\Adapters\OrdenEntrada\SolicitudRecepcion;
 use App\ERP\Contracts\OrdenEntradaService;
 use Illuminate\Http\Request;
 use RuntimeException;
@@ -14,11 +15,14 @@ class EndpointERP
     public function __construct(public Request $request)
     {
     }
-    public function confirmarOrdenEntrada2(OrdenEntradaService $orden)
+    public function confirmarOrdenEntrada(OrdenEntradaService $ordenEntrada)
     {
-        dd($orden->run());
+
+        if ($ordenEntrada instanceof SolicitudRecepcion) {
+            return $ordenEntrada->run();
+        }
     }
-    public function confirmarOrdenEntrada(Request $orden)
+    public function confirmarOrdenEntrada2(Request $orden)
     {
         dd($orden);
         if ($orden instanceof OrdenCompraRecepcion) {

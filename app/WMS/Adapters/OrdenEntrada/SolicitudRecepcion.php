@@ -14,7 +14,7 @@ class SolicitudRecepcion extends OrdenEntradaService
 
     protected function codDeposito($model): string
     {
-        return "02";
+        return $model->wmscmdetgui->first()->gui_boddes;
     }
 
     protected function nroOrdenEntrada($model): string
@@ -22,6 +22,11 @@ class SolicitudRecepcion extends OrdenEntradaService
         return $model->gui_numero;
     }
 
+    public function nroOrdenCliente($model): ?string
+    {
+        return $model->gui_ordcom;
+    }
+    
     public function codTipo($model): string
     {
         return 15;
@@ -44,7 +49,7 @@ class SolicitudRecepcion extends OrdenEntradaService
             {
                 protected function codDeposito($model): string
                 {
-                    return "02";
+                    return $model->gui_boddes;
                 }
 
                 protected function nroOrdenEntrada($model): string

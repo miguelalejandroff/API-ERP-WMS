@@ -44,6 +44,18 @@ class cmguias extends Model
         return $this->hasMany(cmdetgui::class, 'gui_numero', 'gui_numero');
     }
 
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     * Relación con el proveedor de la orden.
+     */
+    public function cmclientes()
+    {
+        /**
+         * @return hasOne La relación hasOne entre cmordcom y cmclientes. 
+         * cmclientes representa al proveedor de la orden.
+         */
+        return $this->hasOne(cmclientes::class, 'aux_claves', 'gui_subcta');
+    }
     public function ScopeOrden($query, $orden = null)
     {
         return $query->where('gui_numero', $orden)->first();

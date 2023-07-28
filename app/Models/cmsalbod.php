@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -47,4 +48,11 @@ class cmsalbod extends Model
         "bod_salmy2",
         "bod_salju2"
     ];
+    public function scopebyBodegaProducto($query, $bodega, $producto, $year = null)
+    {
+        if (is_null($year)) {
+            $year = Carbon::now()->year;
+        }
+        return $query->where('bod_produc', $producto)->where('bod_bodega', $bodega)->where('bod_ano', $year)->first();
+    }
 }

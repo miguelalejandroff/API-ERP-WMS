@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Casts\GetRubroAndGroup;
 use App\Http\Controllers\Logs\Log;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -84,7 +85,10 @@ class cmproductos extends Model
             exit;
         }
     }
-
+    public function scopebyProducto($query, $producto)
+    {
+        return $query->where('pro_codigo', $producto)->where('pro_anomes', Carbon::now()->format('Ym'))->first();
+    }
     public function nullException($value)
     {
         if (is_null($value)) {

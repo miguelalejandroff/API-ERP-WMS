@@ -3,12 +3,12 @@
 namespace App\ERP\Handler;
 
 use App\ERP\Build\Handler;
-use App\Http\Controllers\MaestroProducto;
-use App\Libs\WMS;
+use App\ERP\Exception\GuiaCompraException;
 use App\Models\guicompra;
 use App\Models\guidetcompra;
+use App\WMS\Contracts\OrdenEntradaService;
+use App\WMS\EndpointWMS;
 use Exception;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Clase GuiaCompraHandler
@@ -85,7 +85,6 @@ class GuiaCompraHandler extends Handler
     public function handle($context)
     {
 
-        DB::beginTransaction();
         try {
             $ordenCompra = $context->ordenCompra;
 
@@ -96,25 +95,15 @@ class GuiaCompraHandler extends Handler
             $proveedor = $context->proveedor;
 
             $guiaCompra = guicompra::where('gui_ordcom', $ordenCompra->ord_numcom)->where('gui_tipgui', $this->tipoGuia)->first();
+
             if (!$guiaCompra) {
 
                 $encabezado =  $this->insertEncabezado($solicitudRecepcion, $recepcion, $ordenCompra, $proveedor);
-                foreach ($ordenCompra->cmdetord as &$row) {
-                    $producto = $row->producto;
-                    // Si el rubro del producto es igual a 3
-                    //if ($producto->productoClase->codigoRubro == '3') {
-                    /*$ord_cantid = Cmdetord::where('ord_produc', $tmp_gc->produc_gc)
-                                          ->where('ord_numcom', $guias->gui_ordcom)
-                                          ->first()->ord_cantid;
 
-                    if ($tmp_gc->canord_gc != $ord_cantid) {
-                        $tmp_gc->canord_gc = $ord_cantid;
-                    }*/
-                    //}
+                foreach ($ordenCompra->cmdetord as &$row) {
 
                     $detalle = $this->insertDetalle($encabezado->gui_clave, $row);
-                    dd($detalle);
-                    throw new Exception("hola", 500);
+
                     /*
                 $productoRecepcion = $recepcion->detalle->filter(function ($item) use ($detalle) {
                     return $item->codigoProducto == $detalle->gui_produc;
@@ -139,16 +128,18 @@ class GuiaCompraHandler extends Handler
                 );
                 */
                 }
+                //$this->enviaGuiaCompraWMS($encabezado->gui_numero);
             }
+            /*
             foreach ($recepcion->detalle as $row) {
                 guidetcompra::where('gui_numero', $recepcion->numeroOrden)
-                    ->where('gui_tipgui', $this->tipoGuia)
-                    ->where('gui_produc', $row->codigoProducto)
-                    ->decrement('gui_saldo', $row->cantidadRecepcionada);
+                ->where('gui_tipgui', $this->tipoGuia)
+                ->where('gui_produc', $row->codigoProducto)
+                ->decrement('gui_saldo', $row->cantidadRecepcionada);
             }
-        } catch (Exception $e) {
-            DB::rollBack();
-            dd($e);
+            */
+        } catch (GuiaCompraException $e) {
+            throw $e;  // Re-lanza la excepción para que pueda ser atrapada en el nivel superior
         }
     }
 
@@ -167,35 +158,40 @@ class GuiaCompraHandler extends Handler
     public function insertEncabezado($solicitudRecepcion, $recepcion, $ordenCompra, $proveedor)
     {
 
-        $guiaCompra = new guicompra;
+        try {
 
-        $guiaCompra->gui_numero = $ordenCompra->ord_numcom;
-        $guiaCompra->gui_tipgui = $this->tipoGuia;
-        $guiaCompra->gui_fechag = $recepcion->fechaRecepcionWMS->format('Y-m-d');
-        $guiaCompra->gui_ordcom = $ordenCompra->ord_numcom;
+            $guiaCompra = new guicompra;
 
-        $guiaCompra->gui_numrut = $proveedor->aux_numrut;
-        $guiaCompra->gui_digrut = $proveedor->aux_digrut;
-        $guiaCompra->gui_subcta = $proveedor->aux_claves;
-        $guiaCompra->gui_nombre = $proveedor->aux_nombre;
+            $guiaCompra->gui_numero = $ordenCompra->ord_numcom;
+            $guiaCompra->gui_tipgui = $this->tipoGuia;
+            $guiaCompra->gui_fechag = $recepcion->fechaRecepcionWMS->format('Y-m-d');
+            $guiaCompra->gui_ordcom = $ordenCompra->ord_numcom;
 
-        $guiaCompra->gui_guipro = $solicitudRecepcion->gui_guipro ?? 0;
-        $guiaCompra->gui_facpro = $solicitudRecepcion->gui_facpro ?? 0;
-        $guiaCompra->gui_facals = $solicitudRecepcion->gui_facals ?? 0;
+            $guiaCompra->gui_numrut = $proveedor->aux_numrut;
+            $guiaCompra->gui_digrut = $proveedor->aux_digrut;
+            $guiaCompra->gui_subcta = $proveedor->aux_claves;
+            $guiaCompra->gui_nombre = $proveedor->aux_nombre;
 
-        $guiaCompra->gui_sucori = $this->sucursalOrigen;
-        $guiaCompra->gui_sucdes = $this->sucursalDestino;
+            $guiaCompra->gui_guipro = $solicitudRecepcion->gui_guipro ?? 0;
+            $guiaCompra->gui_facpro = $solicitudRecepcion->gui_facpro ?? 0;
+            $guiaCompra->gui_facals = $solicitudRecepcion->gui_facals ?? 0;
 
-        $guiaCompra->gui_paract = $this->parametro;
-        $guiaCompra->gui_fecmod = $recepcion->fechaRecepcionWMS->format('Y-m-d');
-        $guiaCompra->gui_codusu = $solicitudRecepcion->gui_codusu;
-        $guiaCompra->gui_empres = $this->empresa;
+            $guiaCompra->gui_sucori = $this->sucursalOrigen;
+            $guiaCompra->gui_sucdes = $this->sucursalDestino;
 
-        $guiaCompra->gui_current = $recepcion->fechaRecepcionWMS->format('Y-m-d H:i');
+            $guiaCompra->gui_paract = $this->parametro;
+            $guiaCompra->gui_fecmod = $recepcion->fechaRecepcionWMS->format('Y-m-d');
+            $guiaCompra->gui_codusu = $solicitudRecepcion->gui_codusu;
+            $guiaCompra->gui_empres = $this->empresa;
 
-        $guiaCompra->save();
+            $guiaCompra->gui_current = $recepcion->fechaRecepcionWMS->format('Y-m-d H:i');
 
-        return $guiaCompra;
+            $guiaCompra->saveOrFail();
+
+            return $guiaCompra;
+        } catch (Exception $e) {
+            throw new GuiaCompraException("Error al Insertar el Encabezado de la Guia de Compra: {$guiaCompra->gui_numero}");
+        }
     }
 
 
@@ -211,26 +207,54 @@ class GuiaCompraHandler extends Handler
      */
     public function insertDetalle($id,  $row)
     {
-        $detalleCompra = new guidetcompra();
+        try {
 
-        $detalleCompra->gui_clave = $id;
-        $detalleCompra->gui_numero = $row->ord_numcom;
-        $detalleCompra->gui_tipgui = $this->tipoGuia;
+            $detalleCompra = new guidetcompra();
 
-        $detalleCompra->gui_bodori = $this->bodegaOrigen;
-        $detalleCompra->gui_boddes = $this->bodegaDestino;
+            $detalleCompra->gui_clave = $id;
+            $detalleCompra->gui_numero = $row->ord_numcom;
+            $detalleCompra->gui_tipgui = $this->tipoGuia;
 
-        $detalleCompra->gui_produc = $row->ord_produc;
-        $detalleCompra->gui_descri = $row->ord_descri;
-        $detalleCompra->gui_unimed = $row->ord_unimed;
+            $detalleCompra->gui_bodori = $this->bodegaOrigen;
+            $detalleCompra->gui_boddes = $this->bodegaDestino;
 
-        $detalleCompra->gui_canord = $row->calculaCosto->cantidadCalculada;
-        $detalleCompra->gui_canrep = $row->calculaCosto->cantidadCalculada;
-        $detalleCompra->gui_preuni = $row->calculaCosto->precioCalculado;
-        $detalleCompra->gui_saldo = $row->calculaCosto->cantidadCalculada;
+            $detalleCompra->gui_produc = $row->ord_produc;
+            $detalleCompra->gui_descri = $row->ord_descri;
+            $detalleCompra->gui_unimed = $row->ord_unimed;
 
-        $detalleCompra->save();
+            $detalleCompra->gui_canord = $row->calculaCosto->cantidadCalculada;
+            $detalleCompra->gui_canrep = $row->calculaCosto->cantidadCalculada;
+            $detalleCompra->gui_preuni = $row->calculaCosto->precioCalculado;
+            $detalleCompra->gui_saldo = $row->calculaCosto->cantidadCalculada;
 
-        return $detalleCompra;
+            $detalleCompra->saveOrFail();
+
+            return $detalleCompra;
+        } catch (Exception $e) {
+            throw new GuiaCompraException("Error al Insertar el Detalle de la Guia de Compra: {$detalleCompra->gui_numero}");
+        }
+    }
+
+    public function enviaGuiaCompraWMS($guiaCompra)
+    {
+
+        try {
+            // Aquí debes asegurarte de que app()->request tenga los datos necesarios
+            // Puedes hacer algo como esto:
+            app()->request->merge(['guiaCompra' => $guiaCompra]);
+
+            // Obten la instancia de OrdenEntradaService a través del contenedor de servicios
+            $orden = app(OrdenEntradaService::class);
+
+            // Crea una instancia del controlador de orden
+            $ordenController = app(EndpointWMS::class);
+
+            // Ahora puedes usar $orden en el método createOrdenEntrada
+            $response = $ordenController->createOrdenEntrada($orden);
+
+            return $response;
+        } catch (Exception $e) {
+            throw new GuiaCompraException("Error al Enviar la Guia de Compra al WMS: {$response}");
+        }
     }
 }

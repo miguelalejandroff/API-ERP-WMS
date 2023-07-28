@@ -14,7 +14,7 @@ class GuiaCompra extends OrdenEntradaService
 
     protected function codDeposito($model): string
     {
-        return "02";
+        return $model->guidetcompra->first()->gui_boddes;
     }
 
     protected function nroOrdenEntrada($model): string
@@ -24,7 +24,7 @@ class GuiaCompra extends OrdenEntradaService
 
     public function codTipo($model): string
     {
-        return 1;
+        return 7;
     }
 
     public function codProveedor($model): string
@@ -37,6 +37,11 @@ class GuiaCompra extends OrdenEntradaService
         return  WMS::date($model->gui_fechag, 'Y-m-d');
     }
 
+    public function nroOrdenCliente($model): ?string
+    {
+        return $model->gui_ordcom;
+    }
+    
     public function ordenEntradaDetalle($model): Collection
     {
         return  $model->guidetcompra->map(function ($model) {
@@ -44,7 +49,7 @@ class GuiaCompra extends OrdenEntradaService
             {
                 protected function codDeposito($model): string
                 {
-                    return "02";
+                    return $model->gui_boddes;
                 }
 
                 protected function nroOrdenEntrada($model): string
@@ -62,12 +67,6 @@ class GuiaCompra extends OrdenEntradaService
                     return $model->gui_saldo;
                 }
 
-                public function item($model)
-                {
-                    if ($model?->cmproductos) {
-                        return (new CreateItem($model->cmproductos))->get();
-                    }
-                }
             };
 
             return $detalle->get();

@@ -34,7 +34,7 @@ class EndpointWMS
      */
     public function createItem(ItemService $item)
     {
-        //dd($item->getJson());
+        dd($item->getJson());
         return WMS::post('WMS_Admin/CreateItem', $item->getJson());
     }
 
@@ -90,6 +90,7 @@ class EndpointWMS
      */
     public function createOrdenEntrada(OrdenEntradaService $orden)
     {
+        //dd($orden->getJson()->getContent());
         return WMS::post('WMS_Inbound/CreateOrdenEntrada', $orden->getJson());
     }
 }

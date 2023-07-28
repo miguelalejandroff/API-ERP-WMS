@@ -1,6 +1,7 @@
 <?php
 
 namespace App\ERP\Adapters\OrdenEntrada;
+
 use App\ERP\Contracts\OrdenEntradaService;
 use App\ERP\Handler\GuiaCompraHandler;
 use Exception;
@@ -26,8 +27,11 @@ class SolicitudRecepcion implements OrdenEntradaService
             foreach ($this->handlers as $handler) {
                 $handler->execute($this->context);
             }
+            
+            return response()->json(["message" => "Proceso de Recepcion sin Problemas"], 200);
         } catch (Exception $e) {
             DB::rollBack();
+            return response()->json(["message" => $e->getMessage()], 500);
         }
     }
 }
