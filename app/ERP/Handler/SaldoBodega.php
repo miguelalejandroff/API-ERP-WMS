@@ -94,7 +94,7 @@ class SaldoBodega
         if (!$modelo) {
             $modelo = $this->createBodega($bodega, $producto, $cantidad = 0);
         }
-
+        
         return $modelo;
     }
 

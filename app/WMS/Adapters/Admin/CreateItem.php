@@ -1,8 +1,8 @@
 <?php
 
-namespace App\WMS\Adapters;
+namespace App\WMS\Adapters\Admin;
 
-use App\WMS\Contracts\ItemService;
+use App\WMS\Contracts\Admin\ItemService;
 use Illuminate\Support\Collection;
 
 class CreateItem extends ItemService

@@ -3,10 +3,9 @@
 namespace App\WMS\Adapters\OrdenEntrada;
 
 use App\Libs\WMS;
-use App\WMS\Adapters\CreateItem;
-use App\WMS\Adapters\CreateProveedor;
-use App\WMS\Contracts\OrdenEntradaDetalleService;
-use App\WMS\Contracts\OrdenEntradaService;
+use App\WMS\Adapters\Admin\CreateProveedor;
+use App\WMS\Contracts\Inbound\OrdenEntradaDetalleService;
+use App\WMS\Contracts\Inbound\OrdenEntradaService;
 use Illuminate\Support\Collection;
 
 class SolicitudRecepcion extends OrdenEntradaService
@@ -26,7 +25,7 @@ class SolicitudRecepcion extends OrdenEntradaService
     {
         return $model->gui_ordcom;
     }
-    
+
     public function codTipo($model): string
     {
         return 15;

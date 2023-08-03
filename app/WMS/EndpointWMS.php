@@ -3,12 +3,12 @@
 namespace App\WMS;
 
 use App\Libs\WMS;
-use App\WMS\Contracts\ClienteService;
-use App\WMS\Contracts\ItemClaseService;
-use App\WMS\Contracts\ItemCodigoBarraService;
-use App\WMS\Contracts\ItemService;
-use App\WMS\Contracts\OrdenEntradaService;
-use App\WMS\Contracts\ProveedorService;
+use App\WMS\Contracts\Admin\ClienteService;
+use App\WMS\Contracts\Admin\ItemClaseService;
+use App\WMS\Contracts\Admin\ItemCodigoBarraService;
+use App\WMS\Contracts\Admin\ItemService;
+use App\WMS\Contracts\Admin\ProveedorService;
+use App\WMS\Contracts\Inbound\OrdenEntradaService;
 use Illuminate\Http\Request;
 
 /**
@@ -34,7 +34,7 @@ class EndpointWMS
      */
     public function createItem(ItemService $item)
     {
-        dd($item->getJson());
+        //dd($item->getJson());
         return WMS::post('WMS_Admin/CreateItem', $item->getJson());
     }
 

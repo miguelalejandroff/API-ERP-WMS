@@ -3,8 +3,8 @@
 namespace App\WMS\Providers;
 
 use App\Models\cmclientes;
-use App\WMS\Adapters\CreateCliente;
-use App\WMS\Contracts\ClienteService;
+use App\WMS\Adapters\Admin\CreateCliente;
+use App\WMS\Contracts\Admin\ClienteService;
 use Illuminate\Support\ServiceProvider;
 
 class ClienteServiceProvider extends ServiceProvider

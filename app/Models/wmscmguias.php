@@ -69,7 +69,9 @@ class wmscmguias extends Model
          * Buscar la solicitud de recepción basada en la solicitud entrante.
          */
         $solicitudRecepcion = $query->where('gui_numero', $numeroRecepcion)->where('gui_tipgui', '08')->first();
-
+        if (!$solicitudRecepcion) {
+            return 0;
+        }
         /**
          * Comprobar si la solicitud de recepción tiene una promoción asociada.
          */

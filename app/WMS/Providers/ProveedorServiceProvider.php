@@ -3,8 +3,8 @@
 namespace App\WMS\Providers;
 
 use App\Models\cmclientes;
-use App\WMS\Adapters\CreateProveedor;
-use App\WMS\Contracts\ProveedorService;
+use App\WMS\Adapters\Admin\CreateProveedor;
+use App\WMS\Contracts\Admin\ProveedorService;
 use Illuminate\Support\ServiceProvider;
 
 class ProveedorServiceProvider extends ServiceProvider

@@ -1,13 +1,11 @@
 <?php
 
-namespace App\WMS\Contracts;
+namespace App\WMS\Contracts\Inbound;
 
 use App\Libs\WMS;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Collection;
 use App\WMS\Build\AbstractBase;
-
-
 
 abstract class OrdenEntradaService extends AbstractBase
 {

@@ -1,45 +1,48 @@
 <?php
 
 namespace App\WMS\Adapters\OrdenEntrada;
-
+/*
 use App\Libs\WMS;
-use App\WMS\Adapters\CreateItem;
-use App\WMS\Adapters\CreateProveedor;
-use App\WMS\Contracts\OrdenEntradaDetalleService;
-use App\WMS\Contracts\OrdenEntradaService;
+use App\WMS\Adapters\Admin\CreateProveedor;
+use App\WMS\Contracts\Inbound\OrdenEntradaDetalleService;
+use App\WMS\Contracts\Inbound\OrdenEntradaService;
 use Illuminate\Support\Collection;
 
-class NotaCredito extends OrdenEntradaService
+class OrdenCompraRecepcion extends OrdenEntradaService
 {
 
     protected function codDeposito($model): string
     {
-        return $model->fac_codbod;
+        return "02";
     }
 
     protected function nroOrdenEntrada($model): string
     {
-        return $model->fac_nrodoc;
+        return $model->ord_numcom;
     }
 
     public function codTipo($model): string
     {
-        return 15;
+        return 1;
     }
 
     public function codProveedor($model): string
     {
-        return  $model->gui_subcta;
+        return  $model->ord_subcta;
     }
 
+    public function observacion($model): string
+    {
+        return $model->cmordobs?->ord_observ;
+    }
     public function fechaEmisionERP($model): ?string
     {
-        return  WMS::date($model->fac_fecdoc, 'Y-m-d');
+        return  WMS::date($model->ord_fechac, 'Y-m-d');
     }
 
     public function ordenEntradaDetalle($model): Collection
     {
-        return  $model->wmscmdetgui->map(function ($model) {
+        return  $model->cmdetord->map(function ($model) {
             $detalle = new class($model) extends OrdenEntradaDetalleService
             {
                 protected function codDeposito($model): string
@@ -49,17 +52,29 @@ class NotaCredito extends OrdenEntradaService
 
                 protected function nroOrdenEntrada($model): string
                 {
-                    return $model->gui_numero;
+                    return $model->ord_numcom;
                 }
 
                 public function codItem($model): string
                 {
-                    return $model->gui_produc;
+                    return $model->ord_produc;
+                }
+
+                public function codMoneda($model): string
+                {
+                    return $model->cmordcom->ord_moneda;
                 }
 
                 public function cantidadSolicitada($model): int
                 {
-                    return $model->gui_canord;
+                    return $model->calculaCosto->saldoCalculado;
+                }
+
+                public function item($model)
+                {
+                    if ($model?->cmproductos) {
+                        return (new CreateItem($model->cmproductos))->get();
+                    }
                 }
             };
 
@@ -71,3 +86,4 @@ class NotaCredito extends OrdenEntradaService
         return (new CreateProveedor($model->cmclientes))->get();
     }
 }
+*/

@@ -1,8 +1,8 @@
 <?php
 
-namespace App\WMS\Adapters;
+namespace App\WMS\Adapters\Admin;
 
-use App\WMS\Contracts\ItemCodigoBarraService;
+use App\WMS\Contracts\Admin\ItemCodigoBarraService;
 
 class CreateItemCodigoBarra extends ItemCodigoBarraService
 {

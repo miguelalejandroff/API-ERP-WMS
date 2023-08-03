@@ -3,8 +3,8 @@
 namespace App\WMS\Providers;
 
 use App\Models\wmscodigobarra;
-use App\WMS\Adapters\CreateItemCodigoBarra;
-use App\WMS\Contracts\ItemCodigoBarraService;
+use App\WMS\Adapters\Admin\CreateItemCodigoBarra;
+use App\WMS\Contracts\Admin\ItemCodigoBarraService;
 use Illuminate\Support\ServiceProvider;
 
 class ItemCodigoBarraServiceProvider extends ServiceProvider

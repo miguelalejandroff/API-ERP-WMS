@@ -1,8 +1,8 @@
 <?php
 
-namespace App\WMS\Adapters;
+namespace App\WMS\Adapters\Admin;
 
-use App\WMS\Contracts\ClienteService;
+use App\WMS\Contracts\Admin\ClienteService;
 
 class CreateCliente extends ClienteService
 {

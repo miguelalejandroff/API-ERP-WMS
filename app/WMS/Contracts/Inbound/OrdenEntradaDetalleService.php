@@ -1,6 +1,6 @@
 <?php
 
-namespace App\WMS\Contracts;
+namespace App\WMS\Contracts\Inbound;
 
 use Illuminate\Http\JsonResponse;
 use stdClass;

@@ -65,5 +65,6 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'tokenWMS' => \App\Http\Middleware\TokenValidate::class,
         'database' => \App\Http\Middleware\SetDatabaseConnection::class,
+        'LogRequest' => \App\Http\Middleware\LogRequest::class,
     ];
 }

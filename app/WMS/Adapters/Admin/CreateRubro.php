@@ -1,8 +1,8 @@
 <?php
 
-namespace App\WMS\Adapters;
+namespace App\WMS\Adapters\Admin;
 
-use App\WMS\Contracts\ItemClaseService;
+use App\WMS\Contracts\Admin\ItemClaseService;
 
 class CreateRubro extends ItemClaseService
 {

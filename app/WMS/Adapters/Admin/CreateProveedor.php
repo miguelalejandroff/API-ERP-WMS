@@ -1,8 +1,8 @@
 <?php
 
-namespace App\WMS\Adapters;
+namespace App\WMS\Adapters\Admin;
 
-use App\WMS\Contracts\ProveedorService;
+use App\WMS\Contracts\Admin\ProveedorService;
 
 class CreateProveedor extends ProveedorService
 {

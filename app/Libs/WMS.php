@@ -2,8 +2,11 @@
 
 namespace App\Libs;
 
+use App\WMS\Exception\HttpException;
 use Carbon\Carbon;
+use Exception;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Request;
 
 class WMS
 {
@@ -52,19 +55,60 @@ class WMS
     }
     public static function post($endpoint, $body, $self = new self)
     {
-        return Http::withHeaders($self->headers)->send('POST', "{$self->url}{$endpoint}", [
-            'body' =>  $body->getContent()
-        ])->json();
+        $url = "{$self->url}{$endpoint}";
+        try {
+            $response = (object)Http::withHeaders($self->headers)->send('POST', $url, [
+                'body' =>  $body->getContent()
+            ])->json();
+
+
+            if (isset($response->status) && $response->status >= 200 && $response->status < 300) {
+                self::saveSuccessfulResponse($url, 'POST', $body, $response);
+                return $response;
+            } else {
+                $trackingData = [
+                    'url' => $url,
+                    'payload' => $body->original,
+                    'errors' => $response->errors,
+                    'status' => $response->status,
+                    'message' => $response->title
+                ];
+                throw new HttpException("Error en la respuesta: ", 0, $trackingData);
+            }
+        } catch (HttpException $e) {
+
+            $e->saveToDatabase();
+
+            return $response; // o cualquier valor predeterminado que desees.
+        }
+    }
+    private static function saveSuccessfulResponse($url, $method, $body, $response)
+    {
+        // Inserta tu lógica para guardar la respuesta exitosa en la misma tabla de MongoDB
+        $trackingData = [
+            'url' => $url,
+            'method' => $method,
+            'payload' => $body->original,
+            'errors' => $response->errors,
+            'status' => $response->status,
+            'message' => $response->title
+        ];
+
+        $request = Request::instance();
+        $tracking = $request->attributes->get('tracking');
+        $tracking->addTrackingData($trackingData);
     }
 
     public static function now($format = self::DATE_FORMAT_WMS)
     {
         return Carbon::now()->format($format);
     }
+    
     public static function nowYear($format = self::DATE_FORMAT_WMS)
     {
         return Carbon::now()->addYear()->format($format);
     }
+
     public static function date($date, $oldFormat = self::DATE_FORMAT_DATE, $newFormat = self::DATE_FORMAT_WMS)
     {
         return  Carbon::createFromFormat($oldFormat, $date)->format($newFormat);

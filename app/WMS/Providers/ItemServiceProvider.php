@@ -3,8 +3,8 @@
 namespace App\WMS\Providers;
 
 use App\Models\cmproductos;
-use App\WMS\Adapters\CreateItem;
-use App\WMS\Contracts\ItemService;
+use App\WMS\Adapters\Admin\CreateItem;
+use App\WMS\Contracts\Admin\ItemService;
 use Illuminate\Support\ServiceProvider;
 
 class ItemServiceProvider extends ServiceProvider

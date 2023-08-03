@@ -1,6 +1,6 @@
 <?php
 
-namespace App\WMS\Contracts;
+namespace App\WMS\Contracts\Admin;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Collection;

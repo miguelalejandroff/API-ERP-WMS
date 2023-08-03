@@ -1,6 +1,6 @@
 <?php
 
-namespace App\WMS\Contracts;
+namespace App\WMS\Contracts\Admin;
 
 use Illuminate\Http\JsonResponse;
 use App\WMS\Build\AbstractBase;
@@ -9,12 +9,12 @@ abstract class ClienteService extends AbstractBase
 {
 
     /**
-     * Codigo unico de cliente en sistema origen
+     * Codigo unico de cliente en el ERP
      */
     abstract protected function codCliente($model): string;
 
     /**
-     * Rut unico de cliente en sistema origen
+     * Rut unico de cliente en el ERP
      */
     abstract protected function rutCliente($model): string;
 

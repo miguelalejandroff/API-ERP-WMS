@@ -1,0 +1,11 @@
+{
+    "document": "2311252",
+    "type": "07",
+    "status": "200",
+    "code": "10001",
+    "message": "Error con el",
+    "route": "app/WMS/Providers/OrdenEntradaServiceProvider.php",
+    "content":[
+
+    ]
+}

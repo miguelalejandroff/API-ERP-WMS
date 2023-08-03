@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\ERP\Exception\InvalidOrderException;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -20,6 +21,7 @@ class guicompra extends Model
     public $timestamps = false;
 
     protected $fillable = [
+        "gui_clave",
         "gui_numero",
         "gui_tipgui",
         "gui_fechag",
@@ -49,9 +51,9 @@ class guicompra extends Model
     {
         return $this->hasOne(cmclientes::class, 'aux_claves', 'gui_subcta');
     }
-    
+
     public function ScopeOrden($query, $orden = null)
     {
-        return $query->where('gui_numero', $orden)->first();
+        return $query->where('gui_numero', $orden)->first() ?? throw new InvalidOrderException("No Existe Guia de Compra: {$orden}");
     }
 }

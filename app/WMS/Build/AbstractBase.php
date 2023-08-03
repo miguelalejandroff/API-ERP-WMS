@@ -8,6 +8,7 @@ use stdClass;
 
 abstract class AbstractBase
 {
+
     protected $fieldsIgnored = [
         'getJson',
         '__construct',
@@ -49,6 +50,5 @@ abstract class AbstractBase
         }
         return $newData;
     }
-
     protected abstract function getJson(): JsonResponse;
 }

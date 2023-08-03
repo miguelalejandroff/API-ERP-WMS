@@ -1,6 +1,6 @@
 <?php
 
-namespace App\WMS\Contracts;
+namespace App\WMS\Contracts\Inbound;
 
 use Illuminate\Http\JsonResponse;
 use App\WMS\Build\AbstractBase;
@@ -21,7 +21,10 @@ abstract class OrdenEntradaCambioEstadoService extends AbstractBase
     /**
      * Codigo que identifica al nuevo estado para la orden (Valor 5 para cancelar orden)
      */
-    abstract protected function codEstado($model): string;
+    protected function codEstado($model): string
+    {
+        return 5;
+    }
 
     /**
      * Campo libre para indicar el motivo del cambio de estado de orden

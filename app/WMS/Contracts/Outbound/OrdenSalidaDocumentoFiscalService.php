@@ -1,6 +1,6 @@
 <?php
 
-namespace App\WMS\Contracts;
+namespace App\WMS\Contracts\Outbound;
 
 use App\WMS\Build\AbstractBase;
 

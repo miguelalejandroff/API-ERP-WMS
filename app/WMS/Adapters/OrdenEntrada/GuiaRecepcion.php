@@ -3,10 +3,9 @@
 namespace App\WMS\Adapters\OrdenEntrada;
 
 use App\Libs\WMS;
-use App\WMS\Adapters\CreateItem;
-use App\WMS\Adapters\CreateProveedor;
-use App\WMS\Contracts\OrdenEntradaDetalleService;
-use App\WMS\Contracts\OrdenEntradaService;
+use App\WMS\Adapters\Admin\CreateProveedor;
+use App\WMS\Contracts\Inbound\OrdenEntradaDetalleService;
+use App\WMS\Contracts\Inbound\OrdenEntradaService;
 use Illuminate\Support\Collection;
 
 /**
@@ -72,7 +71,7 @@ class GuiaRecepcion extends OrdenEntradaService
 
                 public function cantidadSolicitada($model): int
                 {
-                    return $model->gui_canord;
+                    return $model->gui_canrep;
                 }
             };
 

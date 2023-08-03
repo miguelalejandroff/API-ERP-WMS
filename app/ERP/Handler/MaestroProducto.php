@@ -4,19 +4,20 @@ namespace App\ERP\Handler;
 
 use App\Models\cmproductos;
 use Carbon\Carbon;
+use Exception;
 
 /**
  * Class MaestroProducto
  *
- * Esta clase maneja la actualización del producto maestro.
+ * Esta clase maneja la actualización del maestro producto.
  */
 class MaestroProducto
 {
 
     /**
-     * Actualiza los datos del producto maestro.
+     * Actualiza los datos del maestro producto.
      */
-    protected function updateProductoMaestro(
+    public function updated(
         $producto,
         $precio,
         $cantidad,
@@ -24,14 +25,17 @@ class MaestroProducto
         $documento,
         $cantidadRecepcionada
     ) {
-        $array = [];
-        $producto = cmproductos::byProducto($producto);
+        try {
+            $producto = cmproductos::byProducto($producto);
 
-        $precio = round($precio, 2);
-        $cantidad = round($cantidad, 2);
+            $precio = round($precio, 2);
+            $cantidad = round($cantidad, 2);
+            $cantidadRecepcionada = round($cantidadRecepcionada, 2);
 
-        $array = $this->getUpdatedFields($producto, $precio, $fecha, $documento, $cantidad, $cantidadRecepcionada);
-        $producto->update($array);
+            $this->getUpdatedFields($producto, $precio, $fecha, $documento, $cantidad, $cantidadRecepcionada);
+        } catch (Exception $e) {
+            throw new $e;
+        }
     }
 
     /**
@@ -46,27 +50,32 @@ class MaestroProducto
      */
     protected function getUpdatedFields($producto, $precio, $fecha, $documento, $cantidad, $cantidadRecepcionada)
     {
-        $array = [];
-        if ($precio > (int)$producto->pro_comaal) {
-            $array['pro_comaal'] = $precio;
-            $array['pro_femaal'] = $fecha;
-            $array['pro_domaal'] = $documento;
+        try {
+            $array = [];
+            if ($precio > (int)$producto->pro_comaal) {
+                $array['pro_comaal'] = $precio;
+                $array['pro_femaal'] = $fecha;
+                $array['pro_domaal'] = $documento;
+            }
+
+            $fechaActual = Carbon::parse($fecha);
+            $fechaUltimaCompra = Carbon::parse($producto->pro_feulco);
+
+            if ($fechaActual->gte($fechaUltimaCompra) || is_null($producto->pro_feulco)) {
+                $array['pro_coulco'] = $precio;
+                $array['pro_feulco'] = $fecha;
+                $array['pro_doulco'] = $documento;
+            }
+
+            $costoMedio = $this->calcularCostoMedio($producto, $precio, $cantidad);
+
+            $array['pro_stockp'] = round($producto->pro_stockp + $cantidadRecepcionada, 2);
+            $array['pro_cosmed'] = round($costoMedio, 2);
+
+            $producto->update($array);
+        } catch (Exception $e) {
+            throw new $e;
         }
-
-        $fechaActual = Carbon::parse($fecha);
-        $fechaUltimaCompra = Carbon::parse($producto->pro_feulco);
-
-        if ($fechaActual->gte($fechaUltimaCompra) || is_null($producto->pro_feulco)) {
-            $array['pro_coulco'] = $precio;
-            $array['pro_feulco'] = $fecha;
-            $array['pro_doulco'] = $documento;
-        }
-
-        $costoMedio = $this->calcularCostoMedio($producto, $precio, $cantidad);
-        $array['pro_stockp'] = round($producto->pro_stockp + $cantidadRecepcionada, 2);
-        $array['pro_cosmed'] = round($costoMedio, 2);
-
-        return $array;
     }
 
     /**

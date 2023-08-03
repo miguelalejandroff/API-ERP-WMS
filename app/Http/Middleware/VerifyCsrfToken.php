@@ -16,5 +16,6 @@ class VerifyCsrfToken extends Middleware
         'ERP/*',
         'dev/*',
         'test/*',
+        'tracking/*'
     ];
 }

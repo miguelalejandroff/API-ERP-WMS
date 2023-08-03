@@ -4,9 +4,9 @@ namespace App\WMS\Providers;
 
 use App\Models\grupos;
 use App\Models\rubros;
-use App\WMS\Adapters\CreateRubro;
-use App\WMS\Adapters\CreateSubRubro;
-use App\WMS\Contracts\ItemClaseService;
+use App\WMS\Adapters\Admin\CreateRubro;
+use App\WMS\Adapters\Admin\CreateSubRubro;
+use App\WMS\Contracts\Admin\ItemClaseService;
 use Illuminate\Support\ServiceProvider;
 
 class ItemClaseServiceProvider extends ServiceProvider

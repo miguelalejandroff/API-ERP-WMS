@@ -75,12 +75,10 @@ class GuiaCompraHandler extends Handler
     private $proveedor;
 
     /**
-     * Método handle
-     * 
-     * Este método maneja la lógica principal de la creación de la guía de compra. 
-     * Recibe un objeto contexto que contiene información relevante para la creación de la guía.
-     * 
-     * @param object $context objeto que contiene la orden de compra, la solicitud de recepción, la recepción y el proveedor.
+     * Maneja la creación de la guía de compra.
+     *
+     * @param object $context Contiene la orden de compra, la solicitud de recepción, la recepción y el proveedor.
+     * @throws GuiaCompraException Si hay un error en el proceso de creación de la guía.
      */
     public function handle($context)
     {
@@ -104,56 +102,52 @@ class GuiaCompraHandler extends Handler
 
                     $detalle = $this->insertDetalle($encabezado->gui_clave, $row);
 
-                    /*
-                $productoRecepcion = $recepcion->detalle->filter(function ($item) use ($detalle) {
-                    return $item->codigoProducto == $detalle->gui_produc;
-                })->first();
+                    $productoRecepcion = $this->findProductInReceptionDetails($recepcion->detalle, $detalle);
 
-                $cantidadRecepcionada = 0;
+                    $cantidadRecepcionada = $productoRecepcion->cantidadRecepcionada ?? 0;
 
-                if ($productoRecepcion) {
-                    $cantidadRecepcionada = $productoRecepcion->cantidadRecepcionada;
+                    (new MaestroProducto)->updated(
+                        $detalle->gui_produc,
+                        $detalle->gui_preuni,
+                        $detalle->gui_canord,
+                        $encabezado->gui_fechag,
+                        $detalle->gui_numero,
+                        $cantidadRecepcionada
+                    );
                 }
-
-                new MaestroProducto(
-                    $detalle->gui_produc,
-                    $detalle->gui_preuni,
-                    $detalle->gui_canord,
-                    $encabezado->gui_fechag,
-                    $detalle->gui_numero,
-                    $cantidadRecepcionada,
-                    function ($message) {
-                        throw new Exception($message, 500);
-                    }
-                );
-                */
-                }
-                //$this->enviaGuiaCompraWMS($encabezado->gui_numero);
+                $this->enviaGuiaCompraWMS($encabezado->gui_numero);
             }
-            /*
             foreach ($recepcion->detalle as $row) {
-                guidetcompra::where('gui_numero', $recepcion->numeroOrden)
-                ->where('gui_tipgui', $this->tipoGuia)
-                ->where('gui_produc', $row->codigoProducto)
-                ->decrement('gui_saldo', $row->cantidadRecepcionada);
+                $this->updateDetalle($recepcion->numeroOrden, $row->codigoProducto, $row->cantidadRecepcionada);
             }
-            */
         } catch (GuiaCompraException $e) {
             throw $e;  // Re-lanza la excepción para que pueda ser atrapada en el nivel superior
         }
     }
 
     /**
-     * Método insertEncabezado
-     * 
-     * Este método inserta un encabezado de la guía de compra en la base de datos.
-     * 
-     * @param object $solicitudRecepcion objeto que representa la solicitud de recepción creada por el ERP.
-     * @param object $recepcion objeto que representa la recepción creada por el WMS.
-     * @param object $ordenCompra objeto que representa la orden de compra.
-     * @param object $proveedor objeto que representa el proveedor.
-     * 
-     * @return object retorna el encabezado de la guía de compra que fue insertado en la base de datos.
+     * Encuentra un producto en los detalles de la recepción de mercancía.
+     *
+     * @param Collection $recepcionDetalle Detalles de la recepción de la mercancía.
+     * @param object $detalle Detalle de la guía de compra.
+     * @return object El producto buscado, o null si no se encuentra.
+     */
+    protected function findProductInReceptionDetails($recepcionDetalle, $detalle)
+    {
+        return $recepcionDetalle->filter(function ($item) use ($detalle) {
+            return $item->codigoProducto == $detalle->gui_produc;
+        })->first();
+    }
+
+    /**
+     * Inserta el encabezado de la guía de compra en la base de datos.
+     *
+     * @param object $solicitudRecepcion Solicitud de recepción creada por el ERP.
+     * @param object $recepcion Recepción creada por el WMS.
+     * @param object $ordenCompra Orden de compra.
+     * @param object $proveedor Proveedor.
+     * @return object Encabezado de la guía de compra insertado en la base de datos.
+     * @throws GuiaCompraException Si hay un error al insertar el encabezado.
      */
     public function insertEncabezado($solicitudRecepcion, $recepcion, $ordenCompra, $proveedor)
     {
@@ -190,20 +184,18 @@ class GuiaCompraHandler extends Handler
 
             return $guiaCompra;
         } catch (Exception $e) {
-            throw new GuiaCompraException("Error al Insertar el Encabezado de la Guia de Compra: {$guiaCompra->gui_numero}");
+            throw new GuiaCompraException("Error al Insertar el Encabezado de la Guia de Compra: {$guiaCompra->gui_numero}","");
         }
     }
 
 
     /**
-     * Método insertDetalle
-     * 
-     * Este método inserta un detalle de la guía de compra en la base de datos.
-     * 
-     * @param int $id identificador de la guía de compra.
-     * @param object $row fila de la orden de compra.
-     * 
-     * @return object retorna el detalle de la guía de compra que fue insertado en la base de datos.
+     * Inserta un detalle de la guía de compra en la base de datos.
+     *
+     * @param int $id Identificador de la guía de compra.
+     * @param object $row Fila de la orden de compra.
+     * @return object Detalle de la guía de compra insertado en la base de datos.
+     * @throws GuiaCompraException Si hay un error al insertar el detalle.
      */
     public function insertDetalle($id,  $row)
     {
@@ -231,10 +223,32 @@ class GuiaCompraHandler extends Handler
 
             return $detalleCompra;
         } catch (Exception $e) {
-            throw new GuiaCompraException("Error al Insertar el Detalle de la Guia de Compra: {$detalleCompra->gui_numero}");
+            throw new GuiaCompraException("Error al Insertar el Detalle de la Guia de Compra: {$detalleCompra->gui_numero}","");
         }
     }
 
+    /**
+     * Actualiza el detalle de la guía de compra, incrementando la cantidad del saldo.
+     *
+     * @param int $numeroOrden Identificador de la guía de compra.
+     * @param string $codigoProducto Código del producto.
+     * @param int $cantidadRecepcionada Cantidad recepcionada del producto.
+     */
+    protected function updateDetalle($numeroOrden, $codigoProducto, $cantidadRecepcionada)
+    {
+        guidetcompra::where('gui_numero', $numeroOrden)
+            ->where('gui_tipgui', $this->tipoGuia)
+            ->where('gui_produc', $codigoProducto)
+            ->decrement('gui_saldo', $cantidadRecepcionada);
+    }
+
+    /**
+     * Envía la guía de compra al sistema WMS.
+     *
+     * @param string $guiaCompra Número de la guía de compra.
+     * @return mixed Respuesta del WMS.
+     * @throws GuiaCompraException Si hay un error al enviar la guía de compra.
+     */
     public function enviaGuiaCompraWMS($guiaCompra)
     {
 
@@ -254,7 +268,7 @@ class GuiaCompraHandler extends Handler
 
             return $response;
         } catch (Exception $e) {
-            throw new GuiaCompraException("Error al Enviar la Guia de Compra al WMS: {$response}");
+            throw new GuiaCompraException("Error al Enviar la Guia de Compra al WMS: {$response}","");
         }
     }
 }
