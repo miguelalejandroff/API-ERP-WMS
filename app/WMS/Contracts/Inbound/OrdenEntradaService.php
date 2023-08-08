@@ -30,6 +30,14 @@ abstract class OrdenEntradaService extends AbstractBase
     /**
      * Numero opcional que puede referenciar al numero de orden de entrada
      */
+    public function nroReferencia2($model): ?string
+    {
+        return null;
+    }
+
+    /**
+     * Numero opcional que puede referenciar al numero de orden de entrada
+     */
     public function nroOrdenCliente($model): ?string
     {
         return null;
@@ -183,11 +191,13 @@ abstract class OrdenEntradaService extends AbstractBase
 
     public function getJson(): JsonResponse
     {
+
+        $ordenEntrada = parent::get();
         return response()->json([
             'codOwner' => parent::codOwner(),
-            'codDeposito' => $this->codDeposito($this->model),
-            'nroOrdenEntrada' => $this->nroOrdenEntrada($this->model),
-            'ordenEntrada' => parent::get(),
+            'codDeposito' => $ordenEntrada->codDeposito,
+            'nroOrdenEntrada' => $ordenEntrada->nroOrdenEntrada,
+            'ordenEntrada' => $ordenEntrada,
         ]);
     }
 }

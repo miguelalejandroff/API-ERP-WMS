@@ -50,6 +50,8 @@ Route::prefix('WMS')->middleware('tokenWMS', 'LogRequest')->group(function () {
 
     Route::post('CreateOrdenEntrada', [EndpointWMS::class, 'createOrdenEntrada']);
 
+    Route::post('CreateOrdenSalida', [EndpointWMS::class, 'createOrdenSalida']);
+
     Route::post('CreateOrdenEntradaCambioEstado', function (Request $request) {
         return response()->json($request, 200, []);
     });

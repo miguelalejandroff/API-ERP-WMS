@@ -3,10 +3,10 @@
 namespace App\ERP\Handler;
 
 use App\ERP\Build\Handler;
-use App\ERP\Exception\GuiaCompraException;
+use App\Exceptions\CustomException;
 use App\Models\guicompra;
 use App\Models\guidetcompra;
-use App\WMS\Contracts\OrdenEntradaService;
+use App\WMS\Contracts\Inbound\OrdenEntradaService;
 use App\WMS\EndpointWMS;
 use Exception;
 
@@ -102,7 +102,7 @@ class GuiaCompraHandler extends Handler
 
                     $detalle = $this->insertDetalle($encabezado->gui_clave, $row);
 
-                    $productoRecepcion = $this->findProductInReceptionDetails($recepcion->detalle, $detalle);
+                    $productoRecepcion = $this->findProductInReceptionDetails($recepcion->documentoDetalle, $detalle);
 
                     $cantidadRecepcionada = $productoRecepcion->cantidadRecepcionada ?? 0;
 
@@ -117,11 +117,18 @@ class GuiaCompraHandler extends Handler
                 }
                 $this->enviaGuiaCompraWMS($encabezado->gui_numero);
             }
-            foreach ($recepcion->detalle as $row) {
-                $this->updateDetalle($recepcion->numeroOrden, $row->codigoProducto, $row->cantidadRecepcionada);
+            foreach ($recepcion->documentoDetalle as $row) {
+                $this->updateDetalle($ordenCompra->ord_numcom, $row['codigoProducto'], $row['cantidadRecepcionada']);
             }
-        } catch (GuiaCompraException $e) {
-            throw $e;  // Re-lanza la excepción para que pueda ser atrapada en el nivel superior
+        } catch (Exception $e) {
+            $exception = new CustomException("Error al crear la Guia de Compra: {$ordenCompra->ord_numcom}", [
+                'message' => $e->getMessage(),
+                'code' => $e->getCode()
+            ], 500);
+
+            $exception->saveToDatabase(); // Asumiendo que tienes este método en tu clase CustomException
+
+            throw $exception;
         }
     }
 
@@ -135,7 +142,7 @@ class GuiaCompraHandler extends Handler
     protected function findProductInReceptionDetails($recepcionDetalle, $detalle)
     {
         return $recepcionDetalle->filter(function ($item) use ($detalle) {
-            return $item->codigoProducto == $detalle->gui_produc;
+            return $item['codigoProducto'] == $detalle->gui_produc;
         })->first();
     }
 
@@ -147,7 +154,7 @@ class GuiaCompraHandler extends Handler
      * @param object $ordenCompra Orden de compra.
      * @param object $proveedor Proveedor.
      * @return object Encabezado de la guía de compra insertado en la base de datos.
-     * @throws GuiaCompraException Si hay un error al insertar el encabezado.
+     * @throws CustomException Si hay un error al insertar el encabezado.
      */
     public function insertEncabezado($solicitudRecepcion, $recepcion, $ordenCompra, $proveedor)
     {
@@ -184,7 +191,14 @@ class GuiaCompraHandler extends Handler
 
             return $guiaCompra;
         } catch (Exception $e) {
-            throw new GuiaCompraException("Error al Insertar el Encabezado de la Guia de Compra: {$guiaCompra->gui_numero}","");
+            $exception = new CustomException("Error al Insertar el Encabezado de la Guia de Compra: {$guiaCompra->gui_numero}", [
+                'message' => $e->getMessage(),
+                'code' => $e->getCode()
+            ], 500);
+
+            $exception->saveToDatabase(); // Asumiendo que tienes este método en tu clase CustomException
+
+            throw $exception;
         }
     }
 
@@ -195,7 +209,7 @@ class GuiaCompraHandler extends Handler
      * @param int $id Identificador de la guía de compra.
      * @param object $row Fila de la orden de compra.
      * @return object Detalle de la guía de compra insertado en la base de datos.
-     * @throws GuiaCompraException Si hay un error al insertar el detalle.
+     * @throws CustomException Si hay un error al insertar el detalle.
      */
     public function insertDetalle($id,  $row)
     {
@@ -223,7 +237,14 @@ class GuiaCompraHandler extends Handler
 
             return $detalleCompra;
         } catch (Exception $e) {
-            throw new GuiaCompraException("Error al Insertar el Detalle de la Guia de Compra: {$detalleCompra->gui_numero}","");
+            $exception = new CustomException("Error al Insertar el Detalle de la Guia de Compra: {$detalleCompra->gui_numero}", [
+                'message' => $e->getMessage(),
+                'code' => $e->getCode()
+            ], 500);
+
+            $exception->saveToDatabase(); // Asumiendo que tienes este método en tu clase CustomException
+
+            throw $exception;
         }
     }
 
@@ -236,10 +257,21 @@ class GuiaCompraHandler extends Handler
      */
     protected function updateDetalle($numeroOrden, $codigoProducto, $cantidadRecepcionada)
     {
-        guidetcompra::where('gui_numero', $numeroOrden)
-            ->where('gui_tipgui', $this->tipoGuia)
-            ->where('gui_produc', $codigoProducto)
-            ->decrement('gui_saldo', $cantidadRecepcionada);
+        try {
+            guidetcompra::where('gui_numero', $numeroOrden)
+                ->where('gui_tipgui', $this->tipoGuia)
+                ->where('gui_produc', $codigoProducto)
+                ->decrement('gui_saldo', $cantidadRecepcionada);
+        } catch (Exception $e) {
+            $exception = new CustomException("Error al Actualizar la Guia de Compra: {$numeroOrden}", [
+                'message' => $e->getMessage(),
+                'code' => $e->getCode()
+            ], 500);
+
+            $exception->saveToDatabase(); // Asumiendo que tienes este método en tu clase CustomException
+
+            throw $exception;
+        }
     }
 
     /**
@@ -247,6 +279,7 @@ class GuiaCompraHandler extends Handler
      *
      * @param string $guiaCompra Número de la guía de compra.
      * @return mixed Respuesta del WMS.
+     * 
      * @throws GuiaCompraException Si hay un error al enviar la guía de compra.
      */
     public function enviaGuiaCompraWMS($guiaCompra)
@@ -268,7 +301,14 @@ class GuiaCompraHandler extends Handler
 
             return $response;
         } catch (Exception $e) {
-            throw new GuiaCompraException("Error al Enviar la Guia de Compra al WMS: {$response}","");
+            $exception = new CustomException("Error al Enviar la Guia de Compra al WMS", [
+                'message' => $e->getMessage(),
+                'code' => $e->getCode()
+            ], 500);
+
+            $exception->saveToDatabase(); // Asumiendo que tienes este método en tu clase CustomException
+
+            throw $exception;
         }
     }
 }

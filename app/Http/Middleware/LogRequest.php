@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\mongodb\Tracking;
+use Carbon\Carbon;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -22,6 +23,7 @@ class LogRequest
             'guiaCompra' => '07',
             'guiaRecepcion' => '08',
             'solicitudRecepcion' => '08',
+            'solicitudDespacho' => '05'
         ];
 
         // Encuentra el parámetro coincidente en la solicitud.
@@ -31,8 +33,8 @@ class LogRequest
             return $next($request); // o cualquier otra acción.
         }*/
 
-        $paramKey = key($paramName)?? key($request->all());
-        $document = $request->input($paramKey);
+        $paramKey = key($paramName);
+        $document = $paramKey ? $request->input($paramKey) : Carbon::now()->format('Ymd');
         $type = $types[$paramKey] ?? 9999;
 
         $tracking = Tracking::firstOrCreate(
@@ -41,7 +43,7 @@ class LogRequest
         );
 
         $request->attributes->set('tracking', $tracking);
-        
+
         return $next($request);
     }
 }

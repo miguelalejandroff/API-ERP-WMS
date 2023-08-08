@@ -2,6 +2,7 @@
 
 namespace App\Libs;
 
+use App\Models\mongodb\Tracking;
 use App\WMS\Exception\HttpException;
 use Carbon\Carbon;
 use Exception;
@@ -45,7 +46,7 @@ class WMS
     public function __construct(
         protected $url = 'http://198.1.1.122:1950/EnfasysWMS_Api/api/',
         protected $contentType = 'application/json',
-        protected $dataAuth = 'HyQeUL1SUrJ5H+Da6zcFzq006RU5AJGr8hul/QcM6xURShqoS8Tt+Znjd7lc55bbVePq2NN0FErHaDCmdHY65w==',
+        protected $dataAuth = 'LWHXftRvCLqhW+IiQnHygDMOX2JHZv/KA387nvwqKijhrj3ehMg5VMXx+jT1GPRp',
         protected $headers = []
     ) {
         $this->headers = [
@@ -69,9 +70,9 @@ class WMS
                 $trackingData = [
                     'url' => $url,
                     'payload' => $body->original,
-                    'errors' => $response->errors,
-                    'status' => $response->status,
-                    'message' => $response->title
+                    'errors' => $response->errors ?? null,
+                    'status' => $response->status ?? null,
+                    'message' => $response->title ?? null
                 ];
                 throw new HttpException("Error en la respuesta: ", 0, $trackingData);
             }
@@ -96,14 +97,16 @@ class WMS
 
         $request = Request::instance();
         $tracking = $request->attributes->get('tracking');
+
         $tracking->addTrackingData($trackingData);
+        unset($tracking);
     }
 
     public static function now($format = self::DATE_FORMAT_WMS)
     {
         return Carbon::now()->format($format);
     }
-    
+
     public static function nowYear($format = self::DATE_FORMAT_WMS)
     {
         return Carbon::now()->addYear()->format($format);

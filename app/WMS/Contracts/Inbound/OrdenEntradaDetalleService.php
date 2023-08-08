@@ -67,10 +67,11 @@ abstract class OrdenEntradaDetalleService extends AbstractBase
 
     public function getJson(): JsonResponse
     {
+        $ordenEntradaDetalle = parent::get();
         return response()->json([
             'codOwner' => parent::codOwner(),
             'ordenEntradaDetalle' => [
-                parent::get()
+                $ordenEntradaDetalle
             ]
         ]);
     }

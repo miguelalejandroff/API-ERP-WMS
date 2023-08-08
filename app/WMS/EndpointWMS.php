@@ -9,6 +9,7 @@ use App\WMS\Contracts\Admin\ItemCodigoBarraService;
 use App\WMS\Contracts\Admin\ItemService;
 use App\WMS\Contracts\Admin\ProveedorService;
 use App\WMS\Contracts\Inbound\OrdenEntradaService;
+use App\WMS\Contracts\Outbound\OrdenSalidaService;
 use Illuminate\Http\Request;
 
 /**
@@ -92,5 +93,16 @@ class EndpointWMS
     {
         //dd($orden->getJson()->getContent());
         return WMS::post('WMS_Inbound/CreateOrdenEntrada', $orden->getJson());
+    }
+
+    /**
+     * Crea una nueva orden de entrada
+     * 
+     * @param OrdenSalidaService $orden Orden de entrada
+     * @return mixed Respuesta de la solicitud WMS
+     */
+    public function createOrdenSalida(OrdenSalidaService $orden)
+    {
+        return WMS::post('WMS_Outbound/CreateOrdenSalida', $orden->getJson());
     }
 }

@@ -97,9 +97,10 @@ abstract class ItemCodigoBarraService extends AbstractBase
 
     public function getJson(): JsonResponse
     {
+        $itemCodigoBarra = parent::get();
         return response()->json([
             'codOwner' => parent::codOwner(),
-            'itemCodigoBarra' => parent::get()
+            'itemCodigoBarra' => $itemCodigoBarra
         ]);
     }
 }

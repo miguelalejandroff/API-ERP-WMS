@@ -47,7 +47,7 @@ abstract class OrdenSalidaDetalleService extends AbstractBase
      */
     public function pickID($model): ?string
     {
-        return null;
+        return 0;
     }
 
     /**
@@ -61,11 +61,11 @@ abstract class OrdenSalidaDetalleService extends AbstractBase
     /**
      * Codigo de Item (SKU)
      */
-    public function cantidad($model): ?string
+    public function cantidad($model): ?int
     {
         return null;
     }
-    
+
     /**
      * Codigo interno de moneda de la Orden
      */
@@ -92,15 +92,16 @@ abstract class OrdenSalidaDetalleService extends AbstractBase
      */
     public function inventariable($model): ?string
     {
-        return null;
+        return "S";
     }
 
     public function getJson(): JsonResponse
     {
+        $ordenEntradaDetalle = parent::get();
         return response()->json([
             'codOwner' => parent::codOwner(),
             'ordenEntradaDetalle' => [
-                parent::get()
+                $ordenEntradaDetalle
             ]
         ]);
     }

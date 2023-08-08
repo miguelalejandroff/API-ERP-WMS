@@ -12,5 +12,9 @@ class grupos extends Model
 
     protected $connection = 'informix';
 
+    protected $primaryKey = 'cod_rg';
+
+    public $incrementing = false;
+
     public $timestamps = false;
 }

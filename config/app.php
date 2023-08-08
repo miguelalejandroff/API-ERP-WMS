@@ -213,12 +213,14 @@ return [
         App\WMS\Providers\ItemCodigoBarraServiceProvider::class,
         App\WMS\Providers\ItemServiceProvider::class,
         App\WMS\Providers\OrdenEntradaServiceProvider::class,
+        App\WMS\Providers\OrdenSalidaServiceProvider::class,
         App\WMS\Providers\ProveedorServiceProvider::class,
-        
+
         /*
          * Servicios Para Enviar al ERP 
          */
-        App\ERP\Providers\OrdenEntradaServiceProvider::class
+        App\ERP\Providers\OrdenEntradaServiceProvider::class,
+        App\ERP\Providers\OrdenSalidaServiceProvider::class,
     ],
 
     /*

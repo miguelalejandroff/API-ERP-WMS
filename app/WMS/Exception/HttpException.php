@@ -2,6 +2,8 @@
 
 namespace App\WMS\Exception;
 
+use App\Models\mongodb\Tracking;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\Request;
 

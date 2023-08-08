@@ -284,10 +284,11 @@ abstract class ItemService extends AbstractBase
 
     public function getJson(): JsonResponse
     {
+        $item = parent::get();
         return response()->json([
             'codOwner' => parent::codOwner(),
             'item' => [
-                parent::get()
+                $item
             ],
         ]);
     }

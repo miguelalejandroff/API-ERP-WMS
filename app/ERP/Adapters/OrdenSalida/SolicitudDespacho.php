@@ -1,13 +1,13 @@
 <?php
 
-namespace App\ERP\Adapters\OrdenEntrada;
+namespace App\ERP\Adapters\OrdenSalida;
 
-use App\ERP\Contracts\OrdenEntradaService;
+use App\ERP\Contracts\OrdenSalidaService;
 use App\ERP\Handler\GuiaCompraHandler;
 use Exception;
 use Illuminate\Support\Facades\DB;
 
-class SolicitudRecepcion implements OrdenEntradaService
+class SolicitudDespacho implements OrdenSalidaService
 {
     protected $handlers = [];
     protected $context;
@@ -15,23 +15,21 @@ class SolicitudRecepcion implements OrdenEntradaService
     public function __construct($context)
     {
         $this->context = $context;
-
         $this->handlers = [
-            new GuiaCompraHandler(),
+            //new GuiaCompraHandler(),
         ];
     }
     public function run()
     {
-        DB::beginTransaction();
+        //DB::beginTransaction();
         try {
             foreach ($this->handlers as $handler) {
-                $handler->execute($this->context);
+                //$handler->execute($this->context);
             }
 
-            DB::commit();
-            return response()->json(["message" => "Proceso de Recepcion sin Problemas"], 200);
+            return response()->json(["message" => "Proceso de Despacho sin Problemas"], 200);
         } catch (Exception $e) {
-            DB::rollBack();
+            //DB::rollBack();
             return response()->json(["message" => $e->getMessage()], 500);
         }
     }

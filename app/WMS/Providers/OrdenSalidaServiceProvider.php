@@ -3,17 +3,12 @@
 namespace App\WMS\Providers;
 
 use App\Exceptions\CustomException;
-use App\Models\cmguias;
-use App\Models\guicompra;
-use App\Models\wmscmguias;
-use App\WMS\Adapters\OrdenEntrada\GuiaCompra;
-use App\WMS\Adapters\OrdenEntrada\GuiaDespacho;
-use App\WMS\Adapters\OrdenEntrada\GuiaRecepcion;
-use App\WMS\Adapters\OrdenEntrada\SolicitudRecepcion;
-use App\WMS\Contracts\Inbound\OrdenEntradaService;
+use App\Models\despachoencab;
+use App\WMS\Adapters\OrdenSalida\SolicitudDespacho;
+use App\WMS\Contracts\Outbound\OrdenSalidaService;
 use Illuminate\Support\ServiceProvider;
 
-class OrdenEntradaServiceProvider extends ServiceProvider
+class OrdenSalidaServiceProvider extends ServiceProvider
 {
     /**
      * Register services.
@@ -22,7 +17,7 @@ class OrdenEntradaServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->app->bind(OrdenEntradaService::class, function ($app) {
+        $this->app->bind(OrdenSalidaService::class, function ($app) {
             try {
 
                 $tracking = $app->request->attributes->get('tracking');
@@ -30,22 +25,12 @@ class OrdenEntradaServiceProvider extends ServiceProvider
                 $adapter = null;
 
                 switch (true) {
-                    case $app->request->guiaCompra:
-                        $model = guicompra::Orden($app->request->guiaCompra);
+                    case $app->request->solicitudDespacho:
+                        
+                        $model = despachoencab::SolicitudGuia($app->request->solicitudDespacho);
 
-                        $adapter = GuiaCompra::class;
-                        break;
-                    case $app->request->guiaRecepcion:
-                        $model = cmguias::Orden($app->request->guiaRecepcion);
-                        $adapter = GuiaRecepcion::class;
-                        break;
-                    case $app->request->solicitudRecepcion:
-                        $model = wmscmguias::solicitudesPromo($app->request->solicitudRecepcion);
-                        $adapter = SolicitudRecepcion::class;
-                        break;
-                    case $app->request->guiaDespacho:
-                        $model = cmguias::where('gui_numero', $app->request->guiaDespacho)->first();
-                        $adapter = GuiaDespacho::class;
+                        $adapter = SolicitudDespacho::class;
+
                         break;
                     default:
                         throw new CustomException('No se proporciono ningun parametro valido', [], 500);
@@ -53,10 +38,17 @@ class OrdenEntradaServiceProvider extends ServiceProvider
                 if (!$model) {
                     throw new CustomException('Modelo no encontrado', [], 500);
                 }
+
+                $trackingData['errors'] = null;
+                $trackingData['status'] = 200;
+                $trackingData['message'] = 'OK';
+
+                $tracking->addTrackingData($trackingData);
+
                 return new $adapter($model);
             } catch (CustomException $e) {
                 $e->saveToDatabase();
-                throw $e;
+                throw $e; // Cambia el 400 por el código de estado que corresponda
             }
 
             /*

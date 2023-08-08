@@ -2,6 +2,8 @@
 
 namespace App\WMS\Build;
 
+use App\Exceptions\CustomException;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Collection;
 use stdClass;
@@ -29,6 +31,7 @@ abstract class AbstractBase
 
     public function get(): ?stdClass
     {
+
         $newData = new stdClass();
         $newData->codOwner = $this->codOwner();
         //foreach ($this->fields as $field) {
@@ -38,7 +41,19 @@ abstract class AbstractBase
                 continue;
             }
 
-            $data = $this->{$field}($this->model);
+            try {
+                $data = $this->{$field}($this->model);
+            } catch (Exception $e) {
+                /*throw new CustomException("Error en el método $field: " . $e->getMessage(), $e->getCode(), $e);*/
+                $exception = new CustomException("Error en el parametro: $field", [
+                    'message' => $e->getMessage(),
+                    'code' => $e->getCode()
+                ], 500);
+
+                $exception->saveToDatabase(); // Asumiendo que tienes este método en tu clase CustomException
+
+                throw $exception;
+            }
 
             if (($data instanceof Collection and $data->filter(fn ($item) => !is_null($item))->isEmpty())
                 or is_null($data) or (is_array($data) and count($data) == 0)
@@ -48,6 +63,7 @@ abstract class AbstractBase
 
             $newData->$field = $data;
         }
+        unset($this->model);
         return $newData;
     }
     protected abstract function getJson(): JsonResponse;

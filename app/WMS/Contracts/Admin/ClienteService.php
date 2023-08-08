@@ -136,9 +136,10 @@ abstract class ClienteService extends AbstractBase
 
     public function getJson(): JsonResponse
     {
+        $cliente = parent::get();
         return response()->json([
             'codOwner' => parent::codOwner(),
-            'cliente' => parent::get()
+            'cliente' => $cliente
         ]);
     }
 }

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\WMS\Exception;
+namespace App\Exceptions;
 
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -32,14 +32,7 @@ class CustomException extends Exception
     {
         return $this->trackingData;
     }
-    public function getJson(): JsonResponse
-    {
-        return response()->json([
-            'status' => 'error',
-            'message' => $this->getMessage(),
-        ]);
-    }
-    public function render(Request $request)
+    public function render()
     {
         return response()->json($this->getTrackingData(), $this->getCode());
     }

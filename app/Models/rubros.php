@@ -12,5 +12,9 @@ class rubros extends Model
 
     protected $connection = 'informix';
 
+    protected $primaryKey = 'cod_rubro';
+
+    public $incrementing = false;
+
     public $timestamps = false;
 }

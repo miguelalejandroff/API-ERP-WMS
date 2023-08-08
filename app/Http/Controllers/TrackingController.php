@@ -18,7 +18,20 @@ class TrackingController extends Controller
         $trackings = Tracking::all();
 
         // Devolver los registros como una respuesta JSON
+ 
         return response()->json($trackings, 200, [], JSON_PRETTY_PRINT);
+
+        foreach($trackings as $row){
+            if(!is_null($row->errors)){
+                return response()->json($row,200,[], JSON_PRETTY_PRINT);
+            }
+            if($row->status != 200){
+                return response()->json($row,200,[], JSON_PRETTY_PRINT);
+            }
+        }
+        return response()->json($trackings[0], 200, [], JSON_PRETTY_PRINT);
+
+        return response()->json(count($trackings), 200, [], JSON_PRETTY_PRINT);
     }
 
     /**
@@ -73,7 +86,7 @@ class TrackingController extends Controller
      */
     public function destroy($id)
     {
-
+        Tracking::truncate();
         $model = Tracking::find($id);
 
         if ($model) {

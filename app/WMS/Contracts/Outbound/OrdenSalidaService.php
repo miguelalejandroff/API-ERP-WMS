@@ -2,8 +2,6 @@
 
 namespace App\WMS\Contracts\Outbound;
 
-use App\Libs\WMS;
-use Illuminate\Support\Collection;
 use App\WMS\Build\AbstractBase;
 use Illuminate\Http\JsonResponse;
 
@@ -30,25 +28,33 @@ abstract class OrdenSalidaService extends AbstractBase
     /**
      * Numero opcional que puede referenciar al numero de orden de entrada
      */
-    public function nroOrdenCliente($model): ?string
+    public function nroReferencia2($model): ?string
     {
         return null;
     }
     
     /**
+     * Numero opcional que puede referenciar al numero de orden de entrada
+     */
+    public function nroOrdenCliente($model): ?string
+    {
+        return null;
+    }
+
+    /**
      * Corresponde al numero unico del documento de ingreso
      */
-    abstract protected function tipoOrdenSalida($model): string;
+    abstract protected function tipoOrdenSalida($model): int;
 
-    
+
     /**
      * Codigo de la moneda del documento
      */
-    public function codMoneda($model): string
+    public function codMoneda($model): int
     {
         return 1;
     }
-    
+
     /**
      * Codigo de cliente (En caso de devolucion)
      */
@@ -72,7 +78,7 @@ abstract class OrdenSalidaService extends AbstractBase
     {
         return null;
     }
-    
+
     /**
      * Fecha en la que el sistema origen envia orden a WMS
      */
@@ -80,7 +86,7 @@ abstract class OrdenSalidaService extends AbstractBase
     {
         return null;
     }
-    
+
     /**
      * Texto libre asociado a la orden
      */
@@ -105,7 +111,7 @@ abstract class OrdenSalidaService extends AbstractBase
         return "N";
     }
 
-    
+
     /**
      * Texto libre asociado a la orden
      */
@@ -116,11 +122,12 @@ abstract class OrdenSalidaService extends AbstractBase
 
     public function getJson(): JsonResponse
     {
+        $ordenSalida = parent::get();
         return response()->json([
             'codOwner' => parent::codOwner(),
-            'codDeposito' => $this->codDeposito($this->model),
-            'nroOrdenSalida' => $this->nroOrdenSalida($this->model),
-            'ordenSalida' => parent::get(),
+            'codDeposito' => $ordenSalida->codDeposito,
+            'nroOrdenSalida' => $ordenSalida->nroOrdenSalida,
+            'ordenSalida' => $ordenSalida,
         ]);
     }
 }

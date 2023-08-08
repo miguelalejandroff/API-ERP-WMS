@@ -81,7 +81,10 @@ class wmscmguias extends Model
              * Si existe, buscar la promoción.
              */
             $solicitudRecepcionPromocion = $this->where('gui_numero', $solicitudRecepcion->enlrecpromocion?->enl_guipro)->where('gui_tipgui', '08')->first();
-            $solicitudRecepcionPromocion->gui_numero = $solicitudRecepcion->gui_numero;
+            //$solicitudRecepcionPromocion->gui_numero = $solicitudRecepcion->gui_numero;
+            foreach($solicitudRecepcionPromocion->wmscmdetgui as $row){
+                $row->gui_numero = $solicitudRecepcion->gui_numero;
+            }
             /**
              * Concatenar los detalles de la promoción con los detalles de la solicitud de recepción original.
              * Como las colecciones en Laravel son inmutables, necesitamos asignar el resultado de la concatenación

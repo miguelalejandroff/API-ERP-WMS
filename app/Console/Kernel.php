@@ -2,7 +2,6 @@
 
 namespace App\Console;
 
-use App\Jobs\DeveloperJob;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
@@ -18,6 +17,9 @@ class Kernel extends ConsoleKernel
     {
         // $schedule->command('inspire')->hourly();
 
+        $schedule->command('actualizar:maestro-grupos')->dailyAt('7:00');
+        
+        $schedule->command('actualizar:maestro-rubros')->dailyAt('7:00');
         //$schedule->job(new DeveloperJob)->everyMinute();
     }
 

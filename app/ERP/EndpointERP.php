@@ -7,6 +7,7 @@ use App\ERP\Adapters\OrdenEntrada\NotaCredito;
 use App\ERP\Adapters\OrdenEntrada\OrdenCompraRecepcion;
 use App\ERP\Adapters\OrdenEntrada\SolicitudRecepcion;
 use App\ERP\Contracts\OrdenEntradaService;
+use App\ERP\Contracts\OrdenSalidaService;
 use Illuminate\Http\Request;
 use RuntimeException;
 
@@ -22,6 +23,7 @@ class EndpointERP
             return $ordenEntrada->run();
         }
     }
+
     public function confirmarOrdenEntrada2(Request $orden)
     {
         dd($orden);
@@ -35,8 +37,8 @@ class EndpointERP
             return response()->json(["message" => "Guia Recepcionada"]);
         }
     }
-    public function confirmarOrdenSalida(Request $request)
+    public function confirmarOrdenSalida(OrdenSalidaService $ordenSalida)
     {
-        dd($request);
+        return $ordenSalida->run();
     }
 }

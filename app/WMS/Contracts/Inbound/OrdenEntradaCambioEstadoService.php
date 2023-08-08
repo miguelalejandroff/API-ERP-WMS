@@ -34,11 +34,12 @@ abstract class OrdenEntradaCambioEstadoService extends AbstractBase
 
     public function getJson(): JsonResponse
     {
+        $ordenEntradaCambioEstado = parent::get();
         return response()->json([
             'codOwner' => parent::codOwner(),
-            'codDeposito' => parent::codOwner(),
+            'codDeposito' => $ordenEntradaCambioEstado->codDeposito,
             'ordenEntradaCambioEstado' => [
-                parent::get()
+                $ordenEntradaCambioEstado
             ]
         ]);
     }

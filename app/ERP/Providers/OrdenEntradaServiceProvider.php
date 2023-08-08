@@ -6,14 +6,12 @@ use App\ERP\Adapters\OrdenEntrada\SolicitudRecepcion;
 use App\ERP\Contracts\OrdenEntradaService;
 use App\ERP\Enum\OrdenStatus;
 use App\ERP\Enum\TipoDocumentoERP;
+use App\Exceptions\CustomException;
 use App\Models\cmclientes;
 use App\Models\cmordcom;
 use App\Models\wmscmguias;
 use Carbon\Carbon;
-use Exception;
 use Illuminate\Support\ServiceProvider;
-use RuntimeException;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
 class OrdenEntradaServiceProvider extends ServiceProvider
@@ -29,6 +27,7 @@ class OrdenEntradaServiceProvider extends ServiceProvider
          * Vincula la interfaz OrdenEntradaService a una función anónima que resuelve la implementación.
          */
         $this->app->bind(OrdenEntradaService::class, function ($app) {
+
             /**
              * Crea un objeto de contexto para mantener los datos relevantes.
              */
@@ -41,15 +40,14 @@ class OrdenEntradaServiceProvider extends ServiceProvider
             Log::info('Request Logged:', [
                 'context' => $context,
             ]);
-            
-            $context->recepcion->fechaRecepcionWMS = Carbon::parse($context->recepcion->fechaRecepcionWMS);
 
+            $context->recepcion->fechaRecepcionWMS = Carbon::parse($context->recepcion->fechaRecepcionWMS);
+            $context->recepcion->documentoDetalle = collect($context->recepcion->documentoDetalle);
             /**
              * Maneja diferentes tipos de documentos.
              */
             switch ($context->recepcion->tipoDocumentoERP) {
                 case TipoDocumentoERP::SOLICITUD_RECEPCION->value:
-
                     /**
                      * Busca la solicitud de recepción basándose en el número de documento.
                      */
@@ -58,7 +56,7 @@ class OrdenEntradaServiceProvider extends ServiceProvider
                      * Lanza una excepción si la solicitud de recepción no existe.
                      */
                     if (!$context->solicitudRecepcion) {
-                        throw new Exception("Solicitud de Recepcion no Existe: {$context->recepcion->numeroDocumento}", 500);
+                        throw new CustomException("Solicitud de Recepcion no Existe: {$context->recepcion->numeroDocumento}", [], 500);
                     }
 
                     /**
@@ -70,21 +68,18 @@ class OrdenEntradaServiceProvider extends ServiceProvider
                      * Lanza una excepción si la orden de compra no existe.
                      */
                     if (!$context->ordenCompra) {
-                        throw new Exception("Orden de Compra no Existe: {$context->solicitudRecepcion->gui_ordcom}", 500);
+                        throw new CustomException("Orden de Compra no Existe: {$context->solicitudRecepcion->gui_ordcom}", [], 500);
                     }
 
                     /**
                      * Maneja diferentes estados de la orden de compra.
                      */
                     switch ($context->ordenCompra->ord_estado) {
-                        case OrdenStatus::RECIBIDA->value:
-                            throw new Exception("Orden de Compra Recepcionada: {$context->ordenCompra->ord_numcom}", 500);
                         case OrdenStatus::ANULADA->value:
-                            throw new Exception("Orden de Compra Anulada: {$context->ordenCompra->ord_numcom}", 500);
+                            throw new CustomException("Orden de Compra Anulada: {$context->ordenCompra->ord_numcom}", [], 500);
                         case OrdenStatus::CERRADA->value:
-                            throw new Exception("Orden de Compra Cerrada: {$context->ordenCompra->ord_numcom}", 500);
-                        case OrdenStatus::PENDIENTE->value:
-
+                            throw new CustomException("Orden de Compra Cerrada: {$context->ordenCompra->ord_numcom}", [], 500);
+                        case OrdenStatus::PENDIENTE->value or OrdenStatus::RECIBIDA->value:
                             /**
                              * Si existe una orden de compra bonificada, la busca.
                              */
@@ -102,10 +97,14 @@ class OrdenEntradaServiceProvider extends ServiceProvider
                              */
                             return new SolicitudRecepcion($context);
                     }
+
+                    //case TipoDocumentoERP::SOLICITUD_DESPACHO->value:
+                    //    return new SolicitudRecepcion($context);
+                default:
+                    return throw new CustomException("El tipo de Documento: '{$context->recepcion->tipoDocumentoERP}' no coincide con ninguna categoría válida en el sistema.", [], 500);
             }
         });
     }
-
     /**
      * Bootstrap services.
      *
