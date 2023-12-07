@@ -16,10 +16,12 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         // $schedule->command('inspire')->hourly();
-
-        $schedule->command('actualizar:maestro-grupos')->dailyAt('7:00');
+        /**
+         * Estas son las tareas que se ejecutan a las 7
+         */
+        // $schedule->command('actualizar:maestro-grupos')->dailyAt('7:00');
         
-        $schedule->command('actualizar:maestro-rubros')->dailyAt('7:00');
+        // $schedule->command('actualizar:maestro-rubros')->dailyAt('7:00');
         //$schedule->job(new DeveloperJob)->everyMinute();
     }
 

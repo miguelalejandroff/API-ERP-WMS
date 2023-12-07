@@ -30,10 +30,8 @@ abstract class OrdenEntradaService extends AbstractBase
     /**
      * Numero opcional que puede referenciar al numero de orden de entrada
      */
-    public function nroReferencia2($model): ?string
-    {
-        return null;
-    }
+    abstract protected function nroReferencia2($model): string;
+  
 
     /**
      * Numero opcional que puede referenciar al numero de orden de entrada

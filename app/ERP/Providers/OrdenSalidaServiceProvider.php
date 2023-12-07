@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Log;
 class OrdenSalidaServiceProvider extends ServiceProvider
 {
     /**
-     * Register services.
+     * Register services.  
      *
      * @return void
      */

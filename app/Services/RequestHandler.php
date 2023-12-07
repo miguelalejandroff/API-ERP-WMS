@@ -43,9 +43,9 @@ class RequestHandler
             // Construye la URL completa
             $url = "http://198.1.1.122:8081/WMS/{$endpoint}?{$queryString}";
 
-            // Define el encabezado dataAuth
+            // Define el encabezado dataAuth & token actualizado a la fecha por Bastian
             $headers = [
-                'dataAuth' => 'HyQeUL1SUrJ5H+Da6zcFzq006RU5AJGr8hul/QcM6xURShqoS8Tt+Znjd7lc55bbVePq2NN0FErHaDCmdHY65w==',
+                'dataAuth' => 'LWHXftRvCLqhW+IiQnHygDMOX2JHZv/KA387nvwqKijhrj3ehMg5VMXx+jT1GPRp',
             ];
 
             // Realiza una solicitud POST al endpoint con el encabezado personalizado

@@ -19,7 +19,7 @@ class ItemServiceProvider extends ServiceProvider
         $this->app->bind(ItemService::class, function ($app) {
             
             if ($app->request->has('producto')) {
-                $model = cmproductos::sku($app->request->producto);
+                $model = cmproductos::byProducto($app->request->producto);
                 return new CreateItem($model);
             }
 

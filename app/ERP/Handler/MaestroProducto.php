@@ -71,7 +71,7 @@ class MaestroProducto
 
             $array['pro_stockp'] = round($producto->pro_stockp + $cantidadRecepcionada, 2);
             $array['pro_cosmed'] = round($costoMedio, 2);
-
+            dd($array); 
             $producto->update($array);
         } catch (Exception $e) {
             throw new $e;

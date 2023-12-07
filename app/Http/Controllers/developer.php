@@ -19,6 +19,7 @@ use App\WMS\Adapters\OrdenEntrada\OrdenCompraRecepcion;
 use App\WMS\Templates\Implements\CreateItem as ImplementsCreateItem;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Smalot\PdfParser\Parser;
 
@@ -33,7 +34,8 @@ class developer extends Controller
         dd(json_encode($newData));*/
         //return prueba::get();
 
-        //dd(vpparsis::get());
+        //dd(DB::connection('informix')->select('select * from vpparsis'));
+        dd(vpparsis::get());
         $ordenBase = new GuiaCompra(guicompra::Orden(2310884));
         $newData = $ordenBase->getJson();
         dd($newData);

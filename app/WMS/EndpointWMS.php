@@ -12,6 +12,7 @@ use App\WMS\Contracts\Inbound\OrdenEntradaService;
 use App\WMS\Contracts\Outbound\OrdenSalidaService;
 use Illuminate\Http\Request;
 
+
 /**
  * Clase EndpointWMS: Proporciona métodos para interactuar con el servicio WMS (Warehouse Management System).
  * Permite realizar operaciones como la creación de ítems, clases de ítems, códigos de barras, clientes, proveedores y órdenes de entrada.
@@ -35,7 +36,7 @@ class EndpointWMS
      */
     public function createItem(ItemService $item)
     {
-        //dd($item->getJson());
+        dd($item->getJson());
         return WMS::post('WMS_Admin/CreateItem', $item->getJson());
     }
 
@@ -56,9 +57,13 @@ class EndpointWMS
      * @param ItemCodigoBarraService $item Objeto ItemCodigoBarraService
      * @return mixed Respuesta de la solicitud WMS
      */
-    public function createItemCodigoBarra(ItemCodigoBarraService $item)
+    public function createItemCodigoBarra(ItemService $item)
     {
-        return WMS::post('WMS_Admin/CreateItemCodigoBarra', $item->getJson());
+        $r = (object)[];
+        $items = $item->get();
+        $r->codOwner = $items->codOwner;
+        $r->itemCodigoBarra = $items->itemCodigoBarra;
+        return WMS::post('WMS_Admin/CreateItemCodigoBarra', response()->json($r));
     }
 
     /**

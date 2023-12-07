@@ -15,7 +15,7 @@ class TokenValidate
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->header('dataAuth') !== 'HyQeUL1SUrJ5H+Da6zcFzq006RU5AJGr8hul/QcM6xURShqoS8Tt+Znjd7lc55bbVePq2NN0FErHaDCmdHY65w==') {
+        if ($request->header('dataAuth') !== 'LWHXftRvCLqhW+IiQnHygDMOX2JHZv/KA387nvwqKijhrj3ehMg5VMXx+jT1GPRp') {
             return response()->json([
                 'message' => 'Token incorrecto'
             ], 500);

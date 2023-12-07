@@ -27,6 +27,11 @@ class GuiaDespacho extends OrdenEntradaService
         return 4;
     }
 
+    public function nroReferencia2($model): string
+    {
+        return $model->gui_tipgui;
+    }
+
     public function codProveedor($model): string
     {
         return  $model->gui_subcta;

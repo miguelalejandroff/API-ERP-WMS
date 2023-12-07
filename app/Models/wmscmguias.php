@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
 
 class wmscmguias extends Model
 {
@@ -69,6 +70,7 @@ class wmscmguias extends Model
          * Buscar la solicitud de recepción basada en la solicitud entrante.
          */
         $solicitudRecepcion = $query->where('gui_numero', $numeroRecepcion)->where('gui_tipgui', '08')->first();
+
         if (!$solicitudRecepcion) {
             return 0;
         }
@@ -82,7 +84,7 @@ class wmscmguias extends Model
              */
             $solicitudRecepcionPromocion = $this->where('gui_numero', $solicitudRecepcion->enlrecpromocion?->enl_guipro)->where('gui_tipgui', '08')->first();
             //$solicitudRecepcionPromocion->gui_numero = $solicitudRecepcion->gui_numero;
-            foreach($solicitudRecepcionPromocion->wmscmdetgui as $row){
+            foreach ($solicitudRecepcionPromocion->wmscmdetgui as $row) {
                 $row->gui_numero = $solicitudRecepcion->gui_numero;
             }
             /**

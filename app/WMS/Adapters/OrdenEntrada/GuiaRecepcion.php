@@ -26,7 +26,12 @@ class GuiaRecepcion extends OrdenEntradaService
 
     public function codTipo($model): string
     {
-        return 8;
+        return  8;
+    }
+
+    public function nroReferencia2($model): string
+    {
+        return $model->gui_tipgui;
     }
 
     public function codProveedor($model): string

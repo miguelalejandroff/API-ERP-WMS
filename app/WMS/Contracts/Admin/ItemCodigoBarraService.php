@@ -4,6 +4,7 @@ namespace App\WMS\Contracts\Admin;
 
 use Illuminate\Http\JsonResponse;
 use App\WMS\Build\AbstractBase;
+use Illuminate\Support\Collection;
 
 abstract class ItemCodigoBarraService extends AbstractBase
 {
@@ -100,7 +101,7 @@ abstract class ItemCodigoBarraService extends AbstractBase
         $itemCodigoBarra = parent::get();
         return response()->json([
             'codOwner' => parent::codOwner(),
-            'itemCodigoBarra' => $itemCodigoBarra
+            'itemCodigoBarra' => [$itemCodigoBarra]
         ]);
     }
 }

@@ -25,6 +25,11 @@ class GuiaCompra extends OrdenEntradaService
     {
         return 7;
     }
+    
+    public function nroReferencia2($model): string
+    {
+        return $model->gui_tipgui;
+    }
 
     public function codProveedor($model): string
     {
