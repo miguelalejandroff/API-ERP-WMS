@@ -4,200 +4,145 @@ namespace App\Http\Controllers;
 
 use Exception;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
-class jsonDB
+class JsonDB
 {
-    public function __call($name, $arguments)
-    {
-        // Si el nombre del método comienza con "set", se asume que se está 
-        // tratando de definir una propiedad
-        if (strpos($name, 'set') === 0) {
-            $property = lcfirst(substr($name, 3));
-            //$this->data[$property] = $arguments[0];
-            return $this;
-        }
+    private string $dbPath;
+    private string $collection;
 
-        if (Storage::disk('local')->exists("json/_id{$name}.json")) {
-            return "si hay";
-        }
-        throw new Exception("El método $name no existe en la clase.");
-    }
-    public function find()
+    public function __construct($dbPath = 'json')
     {
+        $this->dbPath = $dbPath;
+        if (!Storage::disk('local')->exists($this->dbPath)) {
+            Storage::disk('local')->makeDirectory($this->dbPath);
+        }
+    }
+
+    /**
+     * Establece la colección actual para operaciones.
+     */
+    public function setCollection(string $collection): self
+    {
+        $this->collection = $collection;
         return $this;
     }
-    /*
-    function __construct(
-        private $filename = null,
-        private $idField = '_id',
-        private $dbPath = null,
-        private $partitionSize = 1000
-    ) {
 
-        $this->dbPath = storage_path('data');
-        $this->filename = $filename;
-        $this->idField = $idField;
-        $this->partitionSize = $partitionSize;
-    }
-    
-    private function getPartitionFilename($id)
+    /**
+     * Devuelve el nombre del archivo JSON de la colección.
+     */
+    private function getFilePath(): string
     {
-        $partitionId = (int) ($id / $this->partitionSize);
-        return $this->filename . '.' . $partitionId;
+        return "{$this->dbPath}/{$this->collection}.json";
     }
 
-    private function readPartition($filename)
+    /**
+     * Lee los datos de la colección.
+     */
+    private function readCollection(): array
     {
-        if (file_exists($filename)) {
-            $data = file_get_contents($filename);
-            return json_decode($data, true);
-        } else {
+        $filePath = $this->getFilePath();
+
+        if (!Storage::disk('local')->exists($filePath)) {
             return [];
         }
+
+        $data = Storage::disk('local')->get($filePath);
+        return json_decode($data, true) ?? [];
     }
 
-    private function writePartition($filename, $data)
+    /**
+     * Escribe datos en la colección.
+     */
+    private function writeCollection(array $data): bool
     {
-        $json = json_encode($data, JSON_PRETTY_PRINT);
-        file_put_contents($filename, $json);
+        $filePath = $this->getFilePath();
+        return Storage::disk('local')->put($filePath, json_encode($data, JSON_PRETTY_PRINT));
     }
 
-    private function writeToFile($data)
+    /**
+     * Inserta un nuevo documento en la colección.
+     */
+    public function insert(array $document): bool
     {
-        $partitionId = 0;
-        foreach ($data as $doc) {
-            $id = $doc[$this->idField];
-            $partitionFilename = $this->getPartitionFilename($id);
-            if ($partitionFilename != $currentPartitionFilename) {
-                $currentPartitionFilename = $partitionFilename;
-                $partitionData = $this->readPartition($currentPartitionFilename);
-            }
-            $partitionData[] = $doc;
-            if (count($partitionData) >= $this->partitionSize) {
-                $this->writePartition($currentPartitionFilename, $partitionData);
-                $partitionId += 1;
-                $currentPartitionFilename = $this->filename . '.' . $partitionId;
-                $partitionData = [];
-            }
-        }
-        if (!empty($partitionData)) {
-            $this->writePartition($currentPartitionFilename, $partitionData);
-        }
+        $data = $this->readCollection();
+        $document['_id'] = $document['_id'] ?? uniqid();
+        $data[] = $document;
+
+        Log::info("Documento insertado", ['document' => $document]);
+
+        return $this->writeCollection($data);
     }
 
-    private function searchInPartition($data, $id)
+    /**
+     * Encuentra un documento por ID.
+     */
+    public function findById(string $id): ?array
     {
-        foreach ($data as $doc) {
-            if ($doc[$this->idField] == $id) {
-                return $doc;
+        $data = $this->readCollection();
+        foreach ($data as $document) {
+            if ($document['_id'] == $id) {
+                return $document;
             }
         }
+
+        Log::warning("Documento no encontrado", ['id' => $id]);
         return null;
     }
 
-    private function searchInFile($id)
+    /**
+     * Actualiza un documento en la colección.
+     */
+    public function update(string $id, array $updates): bool
     {
-        $partitionFilename = $this->getPartitionFilename($id);
-        $partitionData = $this->readPartition($partitionFilename);
-        return $this->searchInPartition($partitionData, $id);
-    }
+        $data = $this->readCollection();
+        $updated = false;
 
-    public function findById($id)
-    {
-        return $this->searchInFile($id);
-    }
-
-    public function insert($doc)
-    {
-        $data = $this->readAll();
-        $data[] = $doc;
-        $this->writeToFile($data);
-    }
-
-    public function update($id, $update)
-    {
-        $data = $this->readAll();
-        foreach ($data as &$doc) {
-            if ($doc[$this->idField] == $id) {
-                foreach ($update as $key => $value) {
-                    $doc[$key] = $value;
-                }
+        foreach ($data as &$document) {
+            if ($document['_id'] == $id) {
+                $document = array_merge($document, $updates);
+                $updated = true;
+                Log::info("Documento actualizado", ['id' => $id, 'updates' => $updates]);
                 break;
             }
         }
-        $this->writeToFile($data);
+
+        return $updated ? $this->writeCollection($data) : false;
     }
 
-    public function delete($collection, $filter = [])
+    /**
+     * Elimina un documento por ID.
+     */
+    public function delete(string $id): bool
     {
-        $collection_path = $this->db_path . '/' . $collection . '.json';
+        $data = $this->readCollection();
+        $originalCount = count($data);
 
-        if (!file_exists($collection_path)) {
+        $data = array_filter($data, fn($doc) => $doc['_id'] !== $id);
+
+        if (count($data) === $originalCount) {
+            Log::warning("Documento no encontrado para eliminar", ['id' => $id]);
             return false;
         }
 
-        $data = $this->read($collection);
-
-        $updated_data = [];
-
-        foreach ($data as $document) {
-            if (!$this->compareFilter($document, $filter)) {
-                $updated_data[] = $document;
-            }
-        }
-
-        return $this->write($collection, $updated_data);
+        Log::info("Documento eliminado", ['id' => $id]);
+        return $this->writeCollection(array_values($data));
     }
-    private function readAll()
-    {
-        $data = [];
 
-        if (file_exists($this->db_path)) {
-            foreach (scandir($this->db_path) as $collection_file) {
-                if (strpos($collection_file, '.json') !== false) {
-                    $collection = str_replace('.json', '', $collection_file);
-                    $data[$collection] = $this->read($collection);
+    /**
+     * Encuentra documentos que coinciden con los filtros proporcionados.
+     */
+    public function find(array $filters = []): array
+    {
+        $data = $this->readCollection();
+
+        return array_filter($data, function ($document) use ($filters) {
+            foreach ($filters as $key => $value) {
+                if (!isset($document[$key]) || $document[$key] != $value) {
+                    return false;
                 }
             }
-        }
-
-        return $data;
+            return true;
+        });
     }
-
-    private function read($collection)
-    {
-        $collection_path = $this->db_path . '/' . $collection . '.json';
-
-        if (!file_exists($collection_path)) {
-            return [];
-        }
-
-        $data = file_get_contents($collection_path);
-
-        return json_decode($data, true);
-    }
-
-    private function compareFilter($document, $filter)
-    {
-        foreach ($filter as $field => $value) {
-            if (isset($document[$field]) && $document[$field] == $value) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private function write($collection, $data)
-    {
-        $collection_path = $this->db_path . '/' . $collection . '.json';
-
-        if (!file_exists($collection_path)) {
-            touch($collection_path);
-        }
-
-        $json_data = json_encode($data, JSON_PRETTY_PRINT);
-
-        return file_put_contents($collection_path, $json_data);
-    }*/
 }

@@ -5,145 +5,115 @@ namespace App\ERP\Handler;
 use App\Models\cmsalbod;
 use App\Models\vpparsis;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Class SaldoBodega
  *
- * Esta clase maneja la lógica para obtener, crear y actualizar saldos de bodega.
+ * Maneja la lógica para obtener, crear y actualizar saldos de bodega.
  */
 class SaldoBodega
 {
     /**
-     * @var array Nombres de los campos de periodo actual.
+     * Periodos actuales y anteriores.
+     *
+     * @var array
      */
-    protected $periodoActual = [
-        "bod_salene",
-        "bod_salfeb",
-        "bod_salmar",
-        "bod_salabr",
-        "bod_salmay",
-        "bod_saljun",
-        "bod_saljul",
-        "bod_salago",
-        "bod_salsep",
-        "bod_saloct",
-        "bod_salnov",
-        "bod_saldic"
+    protected $periodos = [
+        'actual' => [
+            "bod_salene", "bod_salfeb", "bod_salmar", "bod_salabr", "bod_salmay",
+            "bod_saljun", "bod_saljul", "bod_salago", "bod_salsep", "bod_saloct",
+            "bod_salnov", "bod_saldic"
+        ],
+        'anterior' => [
+            "bod_salen2", "bod_salfe2", "bod_salma2", "bod_salab2", "bod_salmy2", "bod_salju2"
+        ]
     ];
 
     /**
-     * @var array Nombres de los campos de periodo anterior.
-     */
-    protected $periodoAnterior = [
-        "bod_salen2",
-        "bod_salfe2",
-        "bod_salma2",
-        "bod_salab2",
-        "bod_salmy2", //Inicio apertura
-        "bod_salju2",
-    ];
-
-    /**
-     * Devuelve el campo de periodo correspondiente a la fecha dada.
+     * Determina el periodo correspondiente basado en la fecha actual y parámetros.
      *
-     * @param Carbon $now Fecha actual.
-     * @return string Campo de periodo.
+     * @param Carbon $now
+     * @return string
      */
-    protected function getPeriodo($now)
+    protected function getPeriodo(Carbon $now)
     {
-        if ($now->month < 7 && $now->year != Carbon::createFromFormat('Y-m-d', vpparsis::first()->par_fechas)->year) {
-            return $this->getPeriodoAnterior($now->month);
-        }
+        $parYear = Carbon::createFromFormat('Y-m-d', vpparsis::first()->par_fechas)->year;
+        $tipo = ($now->year === $parYear) ? 'actual' : 'anterior';
 
-        return $this->getPeriodoActual($now->month);
+        return $this->periodos[$tipo][$now->month - 1] ?? null;
     }
 
     /**
-     * Devuelve el campo de periodo actual correspondiente al mes dado.
+     * Obtiene el modelo de Bodega o lo crea si no existe.
      *
-     * @param int $month Mes.
-     * @return string Campo de periodo actual.
-     */
-    protected function getPeriodoActual($month)
-    {
-        return $this->periodoActual[$month - 1];
-    }
-
-    /**
-     * Devuelve el campo de periodo anterior correspondiente al mes dado.
-     *
-     * @param int $month Mes.
-     * @return string Campo de periodo anterior.
-     */
-    protected function getPeriodoAnterior($month)
-    {
-        return $this->periodoAnterior[$month - 1];
-    }
-
-    /**
-     * Obtiene el modelo de Bodega para los parámetros dados, o lo crea si no existe.
-     *
-     * @param string $bodega Bodega.
-     * @param string $producto Producto.
-     * @return cmsalbod Modelo de Bodega.
+     * @param string $bodega
+     * @param string $producto
+     * @param int $cantidad
+     * @return cmsalbod
      */
     protected function getBodegaModel($bodega, $producto, $cantidad = 0)
     {
-        $modelo = cmsalbod::byBodegaProducto($bodega, $producto);
-
-        if (!$modelo) {
-            $modelo = $this->createBodega($bodega, $producto, $cantidad = 0);
-        }
-        
-        return $modelo;
+        return cmsalbod::firstOrCreate(
+            ['bod_produc' => $producto, 'bod_bodega' => $bodega, 'bod_ano' => Carbon::now()->year],
+            $this->initializeBodegaAttributes($bodega, $producto, $cantidad)
+        );
     }
 
     /**
-     * Actualiza el modelo dado con la cantidad y periodo proporcionados.
+     * Inicializa los atributos de una nueva bodega.
      *
-     * @param cmsalbod $modelo Modelo de Bodega.
-     * @param string $fn Método de actualización.
-     * @param int $cantidad Cantidad.
-     * @param string $periodo Campo de periodo.
+     * @param string $bodega
+     * @param string $producto
+     * @param int $cantidad
+     * @return array
      */
-    protected function updateModelo($modelo, $fn, $cantidad, $periodo)
+    private function initializeBodegaAttributes($bodega, $producto, $cantidad)
     {
-        $modelo->$fn('bod_stockb', $cantidad);
-        $modelo->$fn('bod_stolog', $cantidad);
-        $modelo->$fn($periodo, $cantidad);
+        $attributes = [
+            'bod_ano' => Carbon::now()->year,
+            'bod_produc' => $producto,
+            'bod_bodega' => $bodega,
+            'bod_salini' => 0,
+            'bod_stockb' => 0,
+            'bod_stolog' => 0,
+            'bod_storep' => $cantidad,
+            'bod_stomax' => $cantidad,
+        ];
+
+        foreach (array_merge($this->periodos['actual'], $this->periodos['anterior']) as $periodo) {
+            $attributes[$periodo] = 0;
+        }
+
+        return $attributes;
     }
 
     /**
-     * Crea un nuevo modelo de Bodega para los parámetros dados.
+     * Actualiza el modelo con los valores de stock y periodo.
      *
-     * @param string $bodega Bodega.
-     * @param string $producto Producto.
-     * @return cmsalbod Modelo de Bodega.
+     * @param cmsalbod $modelo
+     * @param int $cantidad
+     * @param string $periodo
+     */
+    public function updateModelo(cmsalbod $modelo, int $cantidad, string $periodo)
+    {
+        DB::transaction(function () use ($modelo, $cantidad, $periodo) {
+            $modelo->increment('bod_stockb', $cantidad);
+            $modelo->increment('bod_stolog', $cantidad);
+            $modelo->increment($periodo, $cantidad);
+        });
+    }
+
+    /**
+     * Crea un nuevo modelo de Bodega si no existe y devuelve el modelo.
+     *
+     * @param string $bodega
+     * @param string $producto
+     * @param int $cantidad
+     * @return cmsalbod
      */
     protected function createBodega($bodega, $producto, $cantidad = 0)
     {
-        $saldoBodega = new cmsalbod();
-
-        $saldoBodega->bod_ano = Carbon::now()->year;
-        $saldoBodega->bod_produc = $producto;
-        $saldoBodega->bod_bodega = $bodega;
-
-        $saldoBodega->bod_salini = 0;
-        $saldoBodega->bod_stockb = 0;
-        $saldoBodega->bod_stolog = 0;
-        $saldoBodega->bod_storep = $cantidad; 
-        $saldoBodega->bod_stomax = $cantidad;
-
-        foreach ($this->periodoActual as $month) {
-            $saldoBodega->$month = 0;
-        }
-
-        foreach ($this->periodoAnterior as $month) {
-            $saldoBodega->$month = 0;
-        }
-
-        $saldoBodega->save();
-
-        return $saldoBodega;
+        return cmsalbod::create($this->initializeBodegaAttributes($bodega, $producto, $cantidad));
     }
 }

@@ -13,49 +13,97 @@ class SolicitudInventario implements InventarioService
 {
     protected $context;
 
+    /**
+     * Constructor de la clase.
+     *
+     * @param object $context Contexto que incluye los datos de inventario.
+     */
     public function __construct($context)
     {
         $this->context = $context;
     }
 
+    /**
+     * Ejecuta el proceso de solicitud de inventario.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function run()
     {
         DB::beginTransaction();
 
         try {
-            // Utiliza TuControladorInventario para actualizar la base de datos
+            // Obtiene el controlador de inventario y actualiza la base de datos
             $controller = $this->getController();
-            $controller->actualizarDesdeWMS($this->buildRequest());
+            $response = $controller->actualizarDesdeWMS($this->buildRequest());
+
+            // Verifica si la respuesta fue exitosa
+            $this->validateResponse($response);
 
             DB::commit();
 
             return response()->json(["message" => "Proceso de Inventario completado sin problemas"], 200);
         } catch (Exception $e) {
             DB::rollBack();
-            return response()->json(["message" => $e->getMessage()], 500);
+            $this->logError($e);
+            return response()->json(["message" => "Error en el proceso de Inventario: " . $e->getMessage()], 500);
         }
     }
 
-    public function getController()
+    /**
+     * Obtiene el controlador de inventario.
+     *
+     * @return InventarioController
+     */
+    protected function getController(): InventarioController
     {
-        // Ajusta según tus necesidades
         return app(InventarioController::class);
     }
 
-    protected function buildRequest()
+    /**
+     * Construye la solicitud Request a partir del contexto.
+     *
+     * @return Request
+     */
+    protected function buildRequest(): Request
     {
-        $request = new Request([
-            'numeroDocumento' => $this->context->inventario->numeroDocumento,
-            'fechaCierre' => $this->context->inventario->fechaCierre,
-            'Bodega' => $this->context->inventario->Bodega,
-            'usuario' => $this->context->inventario->usuario,
-            'documentoDetalle' => $this->context->inventario->documentoDetalle,
+        $inventarioArray = (array)$this->context->inventario;
+
+        return new Request([
+            'numeroDocumento' => $inventarioArray['numeroDocumento'] ?? null,
+            'fechaCierre' => $inventarioArray['fechaCierre'] ?? null,
+            'Bodega' => $inventarioArray['Bodega'] ?? null,
+            'usuario' => $inventarioArray['usuario'] ?? null,
+            'documentoDetalle' => $inventarioArray['documentoDetalle'] ?? [],
         ]);
-    
-        // Convertir el objeto stdClass a un array asociativo
-        $inventarioArray = json_decode(json_encode($this->context->inventario), true);
-    
-        return $request->merge($inventarioArray);
     }
-    
+
+    /**
+     * Valida la respuesta del controlador.
+     *
+     * @param $response
+     * @throws Exception
+     */
+    protected function validateResponse($response): void
+    {
+        if ($response->status() !== 200) {
+            $errorMessage = $response->getData()->message ?? 'Error desconocido';
+            throw new Exception("Error en la respuesta del controlador: $errorMessage");
+        }
+    }
+
+    /**
+     * Registra errores en los logs.
+     *
+     * @param Exception $e
+     */
+    protected function logError(Exception $e): void
+    {
+        $errorMessage = sprintf(
+            "Error en el proceso de Inventario: %s. Datos de la solicitud: %s",
+            $e->getMessage(),
+            json_encode($this->context)
+        );
+        Log::error($errorMessage);
+    }
 }

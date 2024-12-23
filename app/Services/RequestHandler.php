@@ -8,57 +8,83 @@ use Illuminate\Support\Facades\Log;
 
 class RequestHandler
 {
-    /*
-    public function sendRequest(string $parameter, string $value)
-    {
-        try {
-            // Construye la URL con el parámetro dado
-            $url = "http://198.1.1.122:8081/WMS/CreateItemClase?{$parameter}={$value}";
+    private const BASE_URL = 'http://198.1.1.122:8081/WMS/';
+    private const AUTH_HEADER = 'dataAuth';
 
-            // Define el encabezado dataAuth
-            $headers = [
-                'dataAuth' => 'HyQeUL1SUrJ5H+Da6zcFzq006RU5AJGr8hul/QcM6xURShqoS8Tt+Znjd7lc55bbVePq2NN0FErHaDCmdHY65w==',
-            ];
-
-            // Realiza una solicitud POST al endpoint con el encabezado personalizado
-            $response = Http::withHeaders($headers)->post($url);
-
-            // Opcional: puedes verificar el estado de la respuesta
-            if ($response->failed()) {
-                Log::error("Error procesando {$parameter}: {$value} - Respuesta: " . $response->body());
-            }
-
-            return $response;
-        } catch (Exception $e) {
-            Log::error("Error procesando {$parameter}: {$value} - " . $e->getMessage());
-            return null;
-        }
-    }*/
+    /**
+     * Envía una solicitud POST al endpoint especificado con parámetros.
+     *
+     * @param string $endpoint
+     * @param array $parameters
+     * @return mixed
+     */
     public function sendRequest(string $endpoint, array $parameters)
     {
         try {
-            // Construye la cadena de consulta a partir de los parámetros
-            $queryString = http_build_query($parameters);
+            $url = $this->buildUrl($endpoint, $parameters);
+            $headers = $this->getHeaders();
 
-            // Construye la URL completa
-            $url = "http://198.1.1.122:8081/WMS/{$endpoint}?{$queryString}";
+            Log::info("Enviando solicitud POST a {$url}");
 
-            // Define el encabezado dataAuth & token actualizado a la fecha por Bastian
-            $headers = [
-                'dataAuth' => env('token_validate'),
-            ];
-
-            // Realiza una solicitud POST al endpoint con el encabezado personalizado
+            // Enviar la solicitud POST
             $response = Http::withHeaders($headers)->post($url);
 
-            // Opcional: puedes verificar el estado de la respuesta
+            // Verificar si la respuesta fue exitosa
             if ($response->failed()) {
-                Log::error("Error en el endpoint {$endpoint} - Respuesta: " . $response->body());
+                return $this->handleError($endpoint, $response);
             }
-            unset($response);
+
+            Log::info("Respuesta exitosa desde {$endpoint}", ['status' => $response->status()]);
+            return $response->json();
         } catch (Exception $e) {
-            Log::error("Error en el endpoint {$endpoint} - " . $e->getMessage());
-            return null;
+            Log::error("Error en el endpoint {$endpoint}: " . $e->getMessage());
+            return ['error' => $e->getMessage()];
         }
+    }
+
+    /**
+     * Construye la URL con parámetros.
+     *
+     * @param string $endpoint
+     * @param array $parameters
+     * @return string
+     */
+    private function buildUrl(string $endpoint, array $parameters): string
+    {
+        $queryString = http_build_query($parameters);
+        return self::BASE_URL . $endpoint . '?' . $queryString;
+    }
+
+    /**
+     * Obtiene los encabezados necesarios para la solicitud.
+     *
+     * @return array
+     */
+    private function getHeaders(): array
+    {
+        return [
+            self::AUTH_HEADER => env('TOKEN_VALIDATE'),
+        ];
+    }
+
+    /**
+     * Maneja los errores de la respuesta.
+     *
+     * @param string $endpoint
+     * @param \Illuminate\Http\Client\Response $response
+     * @return array
+     */
+    private function handleError(string $endpoint, $response): array
+    {
+        Log::error("Error en el endpoint {$endpoint}", [
+            'status' => $response->status(),
+            'response' => $response->body(),
+        ]);
+
+        return [
+            'error' => true,
+            'status' => $response->status(),
+            'message' => $response->body(),
+        ];
     }
 }

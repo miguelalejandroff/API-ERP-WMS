@@ -14,8 +14,8 @@ class wmscodigobarra extends Model
 
     public $timestamps = false;
 
-    public function cmproductos()
+    public function enlaceprd()
     {
-        return $this->hasOne(cmproductos::class, 'pro_codigo', 'codigo_antig');
+        return $this->hasOne(enlaceprd::class, 'codigo_antig', 'codigo_antig');
     }
 }

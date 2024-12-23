@@ -62,7 +62,7 @@ class cmproductos extends Model
     public function proImpnac(): Attribute
     {
         return Attribute::make(
-            get: fn (string $value): string => $value == "N" ? "NACIONAL" : "IMPORTADO",
+            get: fn(string $value): string => $value == "N" ? "NACIONAL" : "IMPORTADO",
         );
     }
 

@@ -7,6 +7,33 @@ use Illuminate\Support\Collection;
 
 class CreateItem extends ItemService
 {
+    private const UNIDAD_MEDIDA_CODIGOS = [
+        'UN' => 1,
+        'CJ' => 3,
+        'BO' => 16,
+        'FR' => 17,
+        'LA' => 18,
+        'SC' => 19,
+        'SO' => 20,
+        'TA' => 21,
+        'KG' => 22,
+        'MT' => 23,
+        'PK' => 24,
+        'PA' => 25,
+        'RO' => 26,
+        'BT' => 27,
+        'TO' => 29,
+        'M2' => 30,
+        'BA' => 31,
+        'BI' => 32,
+    ];
+
+    private const DEFAULTS = [
+        'controlaSerie' => 'N',
+        'controlaCantidad' => 'S',
+        'esPickeable' => 'S',
+        'codTipo' => 1
+    ];
 
     protected function codItem($model): string
     {
@@ -20,150 +47,103 @@ class CreateItem extends ItemService
 
     public function codItemAlternativo($model): string
     {
-        return $model->pro_newcod;
+        return $model->pro_newcod ?? $this->codItem($model);
     }
 
     public function nomAlternativo($model): string
     {
-        return $model->pro_descri;
-    }
-
-    public function controlaLote($model): string
-    {
-        return $model->enlacewms?->controllote ?? parent::controlaLote($model);
+        return $this->nomItem($model);
     }
 
     public function controlaSerie($model): string
     {
-        return "N";
-    }
-
-    public function controlaExpiracion($model): string
-    {
-        return $model->enlacewms?->controlexpira ?? parent::controlaExpiracion($model);
-    }
-
-    public function controlaFabricacion($model): string
-    {
-        return $model->enlacewms?->controlfabrica ?? parent::controlaFabricacion($model);
-    }
-
-    public function controlaVAS($model): string
-    {
-        return $model->enlacewms?->controlvas ?? parent::controlaVAS($model);
+        return self::DEFAULTS['controlaSerie'];
     }
 
     public function controlaCantidad($model): string
     {
-        return "S";
+        return self::DEFAULTS['controlaCantidad'];
     }
 
-    public function codUnidadMedida($model) : int
+    public function codUnidadMedida($model): int
     {
-        switch ($model->pro_unimed) { 
-            case 'UN':
-                return 1;
-            case 'CJ':
-                return 3;
-            case 'BO':
-                return 16;
-            case 'FR':
-                return 17;
-            case 'LA':
-                return 18;
-            case 'SC':
-                return 19;
-            case 'SO':
-                return 20;
-            case 'TA':
-                return 21;
-            case 'KG':
-                return 22;
-            case 'MT':
-                return 23;
-            case 'PK':
-                return 24;
-            case 'PA':
-                return 25;
-            case 'RO':
-                return 26;
-            case 'BT':
-                return 27;
-            case 'TA':
-                return 28;
-            case 'TO':
-                return 29;
-            case 'M2':
-                return 30;
-            case 'BA':
-                return 31;
-            case 'BI':
-                return 32;
-            default:
-                return 1;
-        }
+        return self::UNIDAD_MEDIDA_CODIGOS[$model->pro_unimed] ?? 1;
     }
 
     public function codTipo($model): string
     {
-        return 1;
-    }
-
-    public function marca($model): ?string
-    {
-        return $model->enlacewms?->marca;
-    }
-
-    public function origen($model): string
-    {
-        return $model->pro_impnac;
+        return self::DEFAULTS['codTipo'];
     }
 
     public function esPickeable($model): string
     {
-        return "S";
+        return self::DEFAULTS['esPickeable'];
+    }
+
+    private function getControlaValue($model, string $property, $default = 'N'): string
+    {
+        return $model->enlacewms->{$property} ?? $default;
+    }
+
+    public function controlaLote($model): string
+    {
+        return $this->getControlaValue($model, 'controllote');
+    }
+
+    public function controlaExpiracion($model): string
+    {
+        return $this->getControlaValue($model, 'controlexpira');
+    }
+
+    public function controlaFabricacion($model): string
+    {
+        return $this->getControlaValue($model, 'controlfabrica');
+    }
+
+    public function controlaVAS($model): string
+    {
+        return $this->getControlaValue($model, 'controlvas');
     }
 
     public function inspeccion($model): string
     {
-        return $model->enlacewms?->inspeccion ?? parent::inspeccion($model);
+        return $this->getControlaValue($model, 'inspeccion', parent::inspeccion($model));
     }
 
     public function cuarentena($model): string
     {
-        return $model->enlacewms?->cuarentena ?? parent::cuarentena($model);
+        return $this->getControlaValue($model, 'cuarentena', parent::cuarentena($model));
     }
 
     public function crossDocking($model): string
     {
-        return $model->enlacewms?->crossdocking ?? parent::crossDocking($model);
+        return $this->getControlaValue($model, 'crossdocking', parent::crossDocking($model));
     }
 
     public function codItemClase1($model): ?string
     {
-        return $model->productoClase->codigoRubro;
+        return $model->productoClase->codigoRubro ?? null;
     }
 
     public function nomItemClase1($model): ?string
     {
-        return $model->productoClase->nombreRubro;
+        return $model->productoClase->nombreRubro ?? null;
     }
 
     public function codItemClase2($model): ?string
     {
-        return $model->productoClase->codigoGrupo;
+        return $model->productoClase->codigoGrupo ?? null;
     }
 
     public function nomItemClase2($model): ?string
     {
-        return $model->productoClase->nombreGrupo;
+        return $model->productoClase->nombreGrupo ?? null;
     }
+
     public function itemCodigoBarra($model): Collection
     {
-        return  $model->wmscodigobarra->map(function ($model) {
-            if (!empty($model->codigo_barra) && !empty($model->tipo_codigo)) {
-                return (new CreateItemCodigoBarra($model))->get();
-            }
-        });
+        return $model->wmscodigobarra
+            ->filter(fn($barcode) => !empty($barcode->codigo_barra) && !empty($barcode->tipo_codigo))
+            ->map(fn($barcode) => (new CreateItemCodigoBarra($barcode))->get());
     }
 }

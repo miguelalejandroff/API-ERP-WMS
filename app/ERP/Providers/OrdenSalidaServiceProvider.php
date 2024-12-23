@@ -7,38 +7,78 @@ use App\ERP\Contracts\OrdenSalidaService;
 use App\ERP\Enum\TipoDocumentoERP;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Log;
+use App\Exceptions\CustomException;
 
 class OrdenSalidaServiceProvider extends ServiceProvider
 {
     /**
-     * Register services.  
+     * Registra el servicio de OrdenSalida.
      *
      * @return void
      */
     public function register()
     {
-        /**
-         * Vincula la interfaz OrdenEntradaService a una función anónima que resuelve la implementación.
-         */
         $this->app->bind(OrdenSalidaService::class, function ($app) {
-            /**
-             * Crea un objeto de contexto para mantener los datos relevantes.
-             */
-            $context = (object)[
-                'trackingId' => uniqid(),
-                'recepcion' => (object)$app->request->all()
-            ];
+            // Crear contexto validado
+            $context = $this->crearContexto($app->request->all());
 
-
-            Log::info('Request Logged:', [
-               'context' => $context,
-             ]);
-            
-            switch ($context->recepcion->tipoDocumentoERP) {
-                default:
-                    return new SolicitudDespacho($context);
-            }
+            // Determinar la implementación basada en el tipo de documento
+            return $this->resolverServicio($context);
         });
+    }
+
+    /**
+     * Crea un contexto estructurado y validado.
+     *
+     * @param array $data
+     * @return object
+     * @throws CustomException
+     */
+    private function crearContexto(array $data)
+    {
+        // Validar campos requeridos
+        if (empty($data['tipoDocumentoERP'])) {
+            throw new CustomException("El campo 'tipoDocumentoERP' es obligatorio.", [], 400);
+        }
+
+        // Crear un ID de seguimiento
+        $trackingId = uniqid('os_', true);
+
+        $context = (object)[
+            'trackingId' => $trackingId,
+            'recepcion' => (object)$data,
+        ];
+
+        // Log del contexto creado
+        Log::info('Contexto de OrdenSalida Creado', [
+            'trackingId' => $trackingId,
+            'tipoDocumentoERP' => $data['tipoDocumentoERP']
+        ]);
+
+        return $context;
+    }
+
+    /**
+     * Resuelve la implementación según el tipo de documento.
+     *
+     * @param object $context
+     * @return SolicitudDespacho
+     * @throws CustomException
+     */
+    private function resolverServicio($context)
+    {
+        $tipoDocumento = $context->recepcion->tipoDocumentoERP;
+
+        switch ($tipoDocumento) {
+            case TipoDocumentoERP::SOLICITUD_DESPACHO->value:
+                Log::info('Procesando SolicitudDespacho', ['trackingId' => $context->trackingId]);
+                return new SolicitudDespacho($context);
+
+            default:
+                $errorMsg = "Tipo de Documento no válido: '{$tipoDocumento}'";
+                Log::error($errorMsg, ['trackingId' => $context->trackingId]);
+                throw new CustomException($errorMsg, [], 400);
+        }
     }
 
     /**

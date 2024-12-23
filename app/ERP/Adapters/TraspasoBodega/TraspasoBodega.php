@@ -5,71 +5,117 @@ namespace App\ERP\Adapters\TraspasoBodega;
 use App\ERP\Contracts\TraspasoBodegaService;
 use App\Http\Controllers\TraspasoBodegaController;
 use App\ERP\Handler\SaldoBodegaCanje;
-use Exception;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Http\Request;
+use Exception;
 
 class TraspasoBodega implements TraspasoBodegaService
 {
     protected $context;
 
+    /**
+     * Constructor que recibe el contexto.
+     *
+     * @param mixed $context
+     */
     public function __construct($context)
     {
         $this->context = $context;
     }
 
+    /**
+     * Ejecuta el proceso principal de traspaso de bodega.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function run()
     {
         DB::beginTransaction();
 
         try {
-            // Utiliza TuControladorInventario para actualizar la base de datos
+            Log::info('TraspasoBodega - Inicio del proceso', ['context' => $this->context]);
+
+            $this->validateContext();
+
+            // Obtener el controlador e iniciar el proceso
             $controller = $this->getController();
             $controller->actualizarDesdeWMS($this->buildRequest());
 
-            $this->saldoBodegaCanje($this->context);
+            // Ejecutar el manejo del saldo de bodega
+            $this->saldoBodegaCanje();
 
             DB::commit();
+            Log::info('TraspasoBodega - Proceso completado exitosamente.');
 
-            return response()->json(["message" => "Proceso de Traspaso de Bodega completado sin problemas"], 200);
+            return response()->json([
+                "success" => true,
+                "message" => "Proceso de Traspaso de Bodega completado sin problemas"
+            ], 200);
         } catch (Exception $e) {
             DB::rollBack();
-            return response()->json(["message" => $e->getMessage()], 500);
+
+            Log::error('TraspasoBodega - Error en el proceso', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                "success" => false,
+                "message" => "Error en Traspaso de Bodega: " . $e->getMessage()
+            ], 500);
         }
     }
 
-    public function getController()
+    /**
+     * Obtiene el controlador de TraspasoBodega.
+     *
+     * @return \App\Http\Controllers\TraspasoBodegaController
+     */
+    protected function getController()
     {
-        // Ajusta según tus necesidades
         return app(TraspasoBodegaController::class);
     }
 
-    private function saldoBodegaCanje($context)
+    /**
+     * Maneja la lógica del saldo de bodega canje.
+     */
+    protected function saldoBodegaCanje()
     {
         try {
             $handler = new SaldoBodegaCanje();
-            $handler->handle($context); // Asegúrate de tener la instancia correcta de $context
-            Log::info('DespachoTransito', ['message' => 'SaldoBodegaCanje ejecutado con éxito.']);
+            $handler->handle($this->context);
+
+            Log::info('TraspasoBodega - SaldoBodegaCanje ejecutado con éxito.');
         } catch (Exception $e) {
-            Log::error('DespachoTransito', ['message' => 'Error al ejecutar SaldoBodegaCanje: ' . $e->getMessage()]);
-            // Agrega más detalles si es necesario
+            Log::error('TraspasoBodega - Error en SaldoBodegaCanje', ['error' => $e->getMessage()]);
+            throw new Exception("Error al ejecutar SaldoBodegaCanje: " . $e->getMessage());
         }
     }
-    
-    
 
-    protected function buildRequest()
+    /**
+     * Construye el request para el controlador.
+     *
+     * @return \Illuminate\Http\Request
+     */
+    protected function buildRequest(): Request
     {
-        $request = new Request([
-            'numeroDocumento' => $this->context->traspasoBodega->numeroDocumento,
-            'fechaRecepcionWMS' => $this->context->traspasoBodega->fechaRecepcionWMS,
-            'usuario' => $this->context->traspasoBodega->usuario,
-            'documentoDetalle' => $this->context->traspasoBodega->documentoDetalle,
-        ]);
+        $traspasoBodega = $this->context->traspasoBodega;
 
-        $traspasoBodegaArray = json_decode(json_encode($this->context->traspasoBodega), true);
-    
-        return $request->merge($traspasoBodegaArray);
+        return new Request([
+            'numeroDocumento' => $traspasoBodega->numeroDocumento ?? null,
+            'fechaRecepcionWMS' => $traspasoBodega->fechaRecepcionWMS ?? null,
+            'usuario' => $traspasoBodega->usuario ?? null,
+            'documentoDetalle' => $traspasoBodega->documentoDetalle ?? [],
+        ]);
+    }
+
+    /**
+     * Valida el contexto recibido.
+     *
+     * @throws Exception
+     */
+    protected function validateContext()
+    {
+        if (empty($this->context) || empty($this->context->traspasoBodega)) {
+            throw new Exception("El contexto de Traspaso de Bodega es inválido o incompleto.");
+        }
     }
 }

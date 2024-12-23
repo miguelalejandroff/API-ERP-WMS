@@ -2,44 +2,52 @@
 
 namespace App\Casts;
 
-use App\Models\grupos;
-use App\Models\rubros;
+use App\Models\Grupos;
+use App\Models\Rubros;
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
 
 class GetRubroAndGroup implements CastsAttributes
 {
-    public $codigoRubro;
-    public $nombreRubro;
-    public $codigoGrupo;
-    public $nombreGrupo;
     /**
-     * Cast the given value.
+     * Transforma el atributo al recuperarlo.
      *
      * @param  \Illuminate\Database\Eloquent\Model  $model
      * @param  string  $key
      * @param  mixed  $value
      * @param  array  $attributes
-     * @return mixed
+     * @return array
      */
     public function get($model, string $key, $value, array $attributes)
     {
-        $array = str_split($attributes['pro_newcod']);
+        $result = [
+            'codigoRubro' => null,
+            'nombreRubro' => null,
+            'codigoGrupo' => null,
+            'nombreGrupo' => null,
+        ];
 
-        $rubros = rubros::where('cod_rubro', $array[0])->first();
+        // Validar el atributo 'pro_newcod'
+        if (isset($attributes['pro_newcod']) && strlen($attributes['pro_newcod']) >= 2) {
+            $array = str_split($attributes['pro_newcod']);
 
-        $this->codigoRubro = $rubros?->cod_rubro;
-        $this->nombreRubro = $rubros?->rubro;
+            // Buscar el rubro
+            $rubros = Rubros::where('cod_rubro', $array[0])->first();
+            $result['codigoRubro'] = $rubros?->cod_rubro;
+            $result['nombreRubro'] = $rubros?->rubro;
 
-        $grupo = grupos::where('cod_rubro', $array[0])->where('cod_grupo', $array[1])->first();
+            // Buscar el grupo
+            $grupo = Grupos::where('cod_rubro', $array[0])
+                ->where('cod_grupo', $array[1])
+                ->first();
+            $result['codigoGrupo'] = $grupo?->cod_rg;
+            $result['nombreGrupo'] = $grupo?->grupo;
+        }
 
-        $this->codigoGrupo = $grupo?->cod_rg;
-        $this->nombreGrupo = $grupo?->grupo;
-
-        return $this;
+        return $result;
     }
 
     /**
-     * Prepare the given value for storage.
+     * Prepara el atributo para ser almacenado.
      *
      * @param  \Illuminate\Database\Eloquent\Model  $model
      * @param  string  $key
@@ -49,6 +57,7 @@ class GetRubroAndGroup implements CastsAttributes
      */
     public function set($model, string $key, $value, array $attributes)
     {
+        // Aquí podrías implementar lógica para transformar el valor antes de almacenarlo
         return $value;
     }
 }

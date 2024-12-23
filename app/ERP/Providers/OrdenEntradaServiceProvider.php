@@ -9,78 +9,87 @@ use App\ERP\Contracts\OrdenEntradaService;
 use App\ERP\Enum\OrdenStatus;
 use App\ERP\Enum\TipoDocumentoERP;
 use App\Exceptions\CustomException;
-use App\Models\cmclientes;
-use App\Models\cmordcom;
-use App\Models\wmscmguias;
-use Carbon\Carbon;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Log;
-use App\Http\Controllers\DeleteDespachoEnTransito;
-use Illuminate\Support\Facades\DB;
 
 class OrdenEntradaServiceProvider extends ServiceProvider
 {
     /**
-     * Register services.
+     * Registra el servicio OrdenEntrada.
      *
      * @return void
      */
     public function register()
     {
         $this->app->bind(OrdenEntradaService::class, function ($app) {
-            Log::info('OrdenEntradaService context created:', [
-                'request_data' => $app->request->all()
-            ]);
+            $requestData = $app->request->all();
 
-            $context = new OrdenEntradaContext($app->request->all()); 
-    
-            switch ($context->recepcionWms->getDocumento('tipoDocumentoERP')) {
-                case TipoDocumentoERP::SOLICITUD_RECEPCION->value:
+            // Log inicial para trazabilidad
+            Log::info('Solicitud recibida en OrdenEntradaService', ['request_data' => $requestData]);
 
-                    switch ($context->ordenCompra->getDocumento('ord_estado')) {
-                        case OrdenStatus::ANULADA->value:
-                            throw new CustomException("Orden de Compra Anulada: {$context->ordenCompra->getDocumento('ord_numcom')}", [], 500);
-                        case OrdenStatus::CERRADA->value:
-                            throw new CustomException("Orden de Compra Cerrada: {$context->ordenCompra->getDocumento('ord_numcom')}", [], 500);
-                        case OrdenStatus::PENDIENTE->value or OrdenStatus::RECIBIDA->value:
-            
-                            $context->cargarDatosSolicitudRecepcion();
-                
-                            return new SolicitudRecepcion($context);
+            // Crear contexto
+            $context = new OrdenEntradaContext($requestData);
+            $tipoDocumento = $context->recepcionWms->getDocumento('tipoDocumentoERP');
+            $ordenEstado = $context->ordenCompra->getDocumento('ord_estado');
 
-                            break;
-                    }
-                
-
-    
-                case TipoDocumentoERP::GUIA_DEVOLUCION->value:
-                case TipoDocumentoERP::GUIA_DESPACHO->value:
-                case TipoDocumentoERP::TRASPASO_SUCURSAL->value:
-                    // Agrega la lógica para el caso de GUIA_DEVOLUCION aquí
-                    $context->guiaRecepcion = (object) $app->request->all();
-        
-                    Log::info('Request Logged:', [
-                        'context' => $context,
-                    ]);
-                    return new DespachoTransito($context);
-    
-                default:
-                    throw new CustomException("El tipo de Documento: '{$context->recepcionWms->getDocumento('tipoDocumentoERP')}' no coincide con ninguna categoría válida en el sistema.", [], 500);
-            }
+            // Determinar acción según el tipo de documento
+            return $this->resolverServicio($context, $tipoDocumento, $ordenEstado);
         });
     }
-    
 
-
-    
     /**
-     * Bootstrap services.
+     * Resuelve y devuelve el servicio correspondiente según el tipo de documento y estado.
      *
-     * @return void
+     * @param OrdenEntradaContext $context
+     * @param string $tipoDocumento
+     * @param string $ordenEstado
+     * @return mixed
+     * @throws CustomException
      */
-    public function boot()
+    private function resolverServicio(OrdenEntradaContext $context, $tipoDocumento, $ordenEstado)
     {
-        //
+        switch ($tipoDocumento) {
+            case TipoDocumentoERP::SOLICITUD_RECEPCION->value:
+                return $this->procesarSolicitudRecepcion($context, $ordenEstado);
+
+            case TipoDocumentoERP::GUIA_DEVOLUCION->value:
+            case TipoDocumentoERP::GUIA_DESPACHO->value:
+            case TipoDocumentoERP::TRASPASO_SUCURSAL->value:
+                Log::info('Procesando Despacho Transito', ['context' => $context]);
+                return new DespachoTransito($context);
+
+            default:
+                $errorMsg = "Tipo de Documento no válido: '{$tipoDocumento}'";
+                Log::error($errorMsg);
+                throw new CustomException($errorMsg, [], 500);
+        }
     }
 
+    /**
+     * Procesa la lógica específica para Solicitudes de Recepción.
+     *
+     * @param OrdenEntradaContext $context
+     * @param string $ordenEstado
+     * @return SolicitudRecepcion
+     * @throws CustomException
+     */
+    private function procesarSolicitudRecepcion(OrdenEntradaContext $context, $ordenEstado)
+    {
+        // Validar estado de la Orden de Compra
+        if ($ordenEstado === OrdenStatus::ANULADA->value) {
+            throw new CustomException("Orden de Compra Anulada: {$context->ordenCompra->getDocumento('ord_numcom')}", [], 500);
+        }
+
+        if ($ordenEstado === OrdenStatus::CERRADA->value) {
+            throw new CustomException("Orden de Compra Cerrada: {$context->ordenCompra->getDocumento('ord_numcom')}", [], 500);
+        }
+
+        if (in_array($ordenEstado, [OrdenStatus::PENDIENTE->value, OrdenStatus::RECIBIDA->value])) {
+            Log::info('Procesando Solicitud de Recepción', ['estado' => $ordenEstado]);
+            $context->cargarDatosSolicitudRecepcion();
+            return new SolicitudRecepcion($context);
+        }
+
+        throw new CustomException("Estado no válido: {$ordenEstado}", [], 500);
+    }
 }

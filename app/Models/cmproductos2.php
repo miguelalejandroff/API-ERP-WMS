@@ -55,6 +55,7 @@ class cmproductos2 extends Model
     {
         return $this->hasMany(wmscodigobarra::class, 'codigo_antig', 'pro_codigo');
     }
+
     public function enlacepromo()
     {
         return $this->hasOne(enlacepromo::class, 'codigo_promos', 'pro_codigo');
@@ -62,7 +63,7 @@ class cmproductos2 extends Model
     public function proImpnac(): Attribute
     {
         return Attribute::make(
-            get: fn (string $value): string => $value == "N" ? "NACIONAL" : "IMPORTADO",
+            get: fn(string $value): string => $value == "N" ? "NACIONAL" : "IMPORTADO",
         );
     }
 

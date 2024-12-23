@@ -20,7 +20,10 @@ abstract class ItemCodigoBarraService extends AbstractBase
     /**
      * Codigo de la unidad de medida asociada al codigo de barras
      */
-    abstract protected function codUnidadMedida($model): int;
+    public function codUnidadMedida($model): ?int
+    {
+        return 1;
+    }
 
     /**
      * Codigo que identifica el item (SKU)

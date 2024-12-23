@@ -19,66 +19,104 @@ class AjusteNegativo implements AjusteNegativoService
         $this->context = $context;
     }
 
+    /**
+     * Ejecuta el proceso de ajuste negativo.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function run()
     {
         DB::beginTransaction();
 
         try {
-            // Usa el controlador para actualizar la base de datos
+            // Actualiza la base de datos utilizando el controlador
             $controller = $this->getController();
             $response = $controller->actualizarDesdeWMS($this->buildRequest());
 
-            // Verifica si la respuesta contiene un error
-            if ($response->status() !== 200) {
-                throw new Exception($response->getData()->message);
-            }
+            // Verifica el estado de la respuesta
+            $this->validateResponse($response);
 
-            $this->saldoBodegaAjusNe($this->context);
+            // Procesa el saldo en bodega
+            $this->processSaldoBodega();
 
             DB::commit();
 
             return response()->json(["message" => "Proceso de Ajuste Negativo completado sin problemas"], 200);
         } catch (Exception $e) {
             DB::rollBack();
-            // Visualización de error resumida
-            $errorMessage = sprintf(
-                "Error en el proceso de Ajuste Negativo: %s. Datos de la solicitud: %s",
-                $e->getMessage(),
-                json_encode($this->context)
-            );
-            Log::error($errorMessage);
+            $this->logError($e);
             return response()->json(["message" => "Error en el proceso de Ajuste Negativo: " . $e->getMessage()], 500);
         }
     }
 
-    public function getController()
+    /**
+     * Obtiene una instancia del controlador AjusteNegativoController.
+     *
+     * @return AjusteNegativoController
+     */
+    protected function getController(): AjusteNegativoController
     {
-        // Ajusta según tus necesidades
         return app(AjusteNegativoController::class);
     }
 
-    private function saldoBodegaAjusNe($context)
+    /**
+     * Procesa el saldo en bodega.
+     */
+    private function processSaldoBodega(): void
     {
         try {
             $handler = new SaldoBodegaAjusNe();
-            $handler->handle($context); // Asegúrate de tener la instancia correcta de $context
-            Log::info('DespachoTransito', ['message' => 'SaldoBodegaAjusNe ejecutado con éxito.']);
+            $handler->handle($this->context);
+            Log::info('SaldoBodegaAjusNe ejecutado con éxito.', ['context' => $this->context]);
         } catch (Exception $e) {
-            Log::error('DespachoTransito', ['message' => 'Error al ejecutar SaldoBodegaAjusNe: ' . $e->getMessage()]);
+            Log::error('Error al ejecutar SaldoBodegaAjusNe: ' . $e->getMessage(), ['context' => $this->context]);
+            throw $e; // Lanza la excepción para manejarla en la transacción principal
         }
     }
 
-    protected function buildRequest()
+    /**
+     * Construye la solicitud Request a partir del contexto.
+     *
+     * @return Request
+     */
+    protected function buildRequest(): Request
     {
-        $ajusteNegativoArray = json_decode(json_encode($this->context->ajusteNegativo), true);
+        $ajusteNegativoArray = (array)$this->context->ajusteNegativo;
 
-        $requestArray = [
+        return new Request([
             'numeroDocumento' => $ajusteNegativoArray['numeroDocumento'] ?? null,
             'fechaRecepcionWMS' => $ajusteNegativoArray['fechaRecepcionWMS'] ?? null,
             'usuario' => $ajusteNegativoArray['usuario'] ?? null,
-            'documentoDetalle' => $ajusteNegativoArray['documentoDetalle'] ?? []
-        ];
+            'documentoDetalle' => $ajusteNegativoArray['documentoDetalle'] ?? [],
+        ]);
+    }
 
-        return new Request($requestArray);
+    /**
+     * Valida la respuesta del controlador.
+     *
+     * @param $response
+     * @throws Exception
+     */
+    protected function validateResponse($response): void
+    {
+        if ($response->status() !== 200) {
+            $errorMessage = $response->getData()->message ?? 'Error desconocido';
+            throw new Exception("Error en la respuesta del controlador: $errorMessage");
+        }
+    }
+
+    /**
+     * Registra el error en los logs.
+     *
+     * @param Exception $e
+     */
+    protected function logError(Exception $e): void
+    {
+        $errorMessage = sprintf(
+            "Error en el proceso de Ajuste Negativo: %s. Datos de la solicitud: %s",
+            $e->getMessage(),
+            json_encode($this->context)
+        );
+        Log::error($errorMessage);
     }
 }

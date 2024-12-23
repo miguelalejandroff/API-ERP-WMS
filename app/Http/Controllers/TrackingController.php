@@ -4,96 +4,112 @@ namespace App\Http\Controllers;
 
 use App\Models\mongodb\Tracking;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Crypt;
 
 class TrackingController extends Controller
 {
-
     /**
-     * GET /resource → index()
+     * GET /tracking → index()
+     * Recupera todos los registros de seguimiento.
      */
     public function index()
     {
-        // Recuperar todos los registros de seguimiento
-        $trackings = Tracking::all();
+        try {
+            $trackings = Tracking::all();
 
-        // Devolver los registros como una respuesta JSON
- 
-        return response()->json($trackings, 200, [], JSON_PRETTY_PRINT);
+            // Verificar errores en registros y filtrar resultados
+            $trackingsWithIssues = $trackings->filter(function ($row) {
+                return !is_null($row->errors) || $row->status != 200;
+            });
 
-        foreach($trackings as $row){
-            if(!is_null($row->errors)){
-                return response()->json($row,200,[], JSON_PRETTY_PRINT);
+            if ($trackingsWithIssues->isNotEmpty()) {
+                return response()->json($trackingsWithIssues->values(), 200, [], JSON_PRETTY_PRINT);
             }
-            if($row->status != 200){
-                return response()->json($row,200,[], JSON_PRETTY_PRINT);
-            }
+
+            // Si no hay problemas, devolver todos los registros
+            return response()->json($trackings, 200, [], JSON_PRETTY_PRINT);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error al recuperar los datos.', 'details' => $e->getMessage()], 500);
         }
-        return response()->json($trackings[0], 200, [], JSON_PRETTY_PRINT);
-
-        return response()->json(count($trackings), 200, [], JSON_PRETTY_PRINT);
     }
 
     /**
-     * POST /resource → store()
+     * POST /tracking → store()
+     * Almacena un nuevo registro.
      */
     public function store(Request $request)
     {
+        $validated = $request->validate([
+            'status' => 'required|numeric',
+            'errors' => 'nullable|string',
+            'data' => 'required|string',
+        ]);
 
-        return response()->json("store");
-        /*
-        $post = Post::create($request->all());
-        return redirect()->route('posts.index');
-        */
+        try {
+            $tracking = Tracking::create($validated);
+            return response()->json(['message' => 'Registro creado correctamente', 'data' => $tracking], 201);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error al crear el registro.', 'details' => $e->getMessage()], 500);
+        }
     }
 
     /**
-     * GET /resource/{id} → show()
+     * GET /tracking/{id} → show()
+     * Muestra un registro específico.
      */
-    public function show(Tracking $post)
+    public function show($id)
     {
-        return response()->json("show");
-        /*
-        return view('posts.show', compact('post'));
-        */
+        $tracking = Tracking::find($id);
+
+        if (!$tracking) {
+            return response()->json(['error' => "Registro no encontrado: {$id}"], 404);
+        }
+
+        return response()->json($tracking, 200, [], JSON_PRETTY_PRINT);
     }
 
     /**
-     * GET /resource/{id}/edit → edit()
+     * PUT /tracking/{id} → update()
+     * Actualiza un registro específico.
      */
-    public function edit(Tracking $post)
+    public function update(Request $request, $id)
     {
-        return response()->json("edit");
-        /*
-        return view('posts.edit', compact('post'));
-        */
+        $validated = $request->validate([
+            'status' => 'sometimes|numeric',
+            'errors' => 'nullable|string',
+            'data' => 'sometimes|string',
+        ]);
+
+        $tracking = Tracking::find($id);
+
+        if (!$tracking) {
+            return response()->json(['error' => "Registro no encontrado: {$id}"], 404);
+        }
+
+        try {
+            $tracking->update($validated);
+            return response()->json(['message' => 'Registro actualizado correctamente', 'data' => $tracking], 200);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error al actualizar el registro.', 'details' => $e->getMessage()], 500);
+        }
     }
 
     /**
-     * PUT /resource/{id} → update()
-     */
-    public function update(Request $request, Tracking $post)
-    {
-        return response()->json("update");
-        /*
-        $post->update($request->all());
-        return redirect()->route('posts.index');
-        */
-    }
-
-    /**
-     * DELETE /resource/{id} → destroy()
+     * DELETE /tracking/{id} → destroy()
+     * Elimina un registro específico.
      */
     public function destroy($id)
     {
-        Tracking::truncate();
-        $model = Tracking::find($id);
+        $tracking = Tracking::find($id);
 
-        if ($model) {
-            $model->delete();
-            return response()->json('Modelo eliminado exitosamente');
+        if (!$tracking) {
+            return response()->json(['error' => "Registro no encontrado: {$id}"], 404);
         }
 
-        return response()->json("Modelo no encontrado {$id}");
+        try {
+            $tracking->delete();
+            return response()->json(['message' => 'Registro eliminado correctamente'], 200);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error al eliminar el registro.', 'details' => $e->getMessage()], 500);
+        }
     }
 }

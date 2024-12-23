@@ -1,7 +1,5 @@
 <?php
 
-
-
 namespace App\ERP\Services;
 
 use App\ERP\Contracts\InventarioService;
@@ -9,6 +7,8 @@ use Illuminate\Http\Request;
 use App\Models\cminvent;
 use App\Models\cmdetinv;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class InventarioServiceImpl implements InventarioService
 {
@@ -19,53 +19,106 @@ class InventarioServiceImpl implements InventarioService
         $this->context = $context;
     }
 
+    /**
+     * Método principal para ejecutar la operación de inventario.
+     */
     public function run()
     {
-
         $data = $this->context->all();
 
-        Log::info('Inicio de la operación de actualización en la base de datos.');
+        // Validar datos recibidos
+        $this->validarDatos($data);
 
-        // Log de información: Datos recibidos
-        Log::info('Datos recibidos para la actualización:', $data);
+        // Actualizar la base de datos en una transacción
+        $this->actualizarInventario($data);
 
-        // Actualizar la tabla cminvent
+        // Retornar respuesta de éxito
+        return response()->json([
+            'message' => 'Inventario actualizado con éxito',
+            'numeroDocumento' => $data['numeroDocumento']
+        ]);
+    }
+
+    /**
+     * Validar los datos de entrada.
+     */
+    private function validarDatos($data)
+    {
+        $validator = Validator::make($data, [
+            'numeroDocumento' => 'required|string',
+            'bodega' => 'required|string',
+            'fechaCierre' => 'required|date',
+            'usuario' => 'required|string',
+            'documentoDetalle' => 'required|array',
+            'documentoDetalle.*.codigoProducto' => 'required|string',
+            'documentoDetalle.*.descripcion' => 'required|string',
+            'documentoDetalle.*.cantidad' => 'required|numeric|min:1',
+        ]);
+
+        if ($validator->fails()) {
+            Log::error('Error en validación de datos', ['errors' => $validator->errors()]);
+            throw new \InvalidArgumentException('Datos inválidos para la operación de inventario.');
+        }
+    }
+
+    /**
+     * Ejecutar la actualización del inventario en una transacción.
+     */
+    private function actualizarInventario($data)
+    {
+        DB::beginTransaction();
+
+        try {
+            Log::info('Inicio de la operación de actualización en la base de datos.', ['numeroDocumento' => $data['numeroDocumento']]);
+
+            // Actualizar tabla cminvent
+            $this->actualizarCminvent($data);
+
+            // Actualizar tabla cmdetinv
+            $this->actualizarCmdetinv($data);
+
+            DB::commit();
+            Log::info('Operación de inventario completada exitosamente.', ['numeroDocumento' => $data['numeroDocumento']]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error en la operación de inventario: ' . $e->getMessage());
+            throw new \RuntimeException('Error al actualizar el inventario.');
+        }
+    }
+
+    /**
+     * Actualizar la tabla cminvent.
+     */
+    private function actualizarCminvent($data)
+    {
         cminvent::updateOrCreate(
             ['inv_numgui' => $data['numeroDocumento']],
             [
                 'inv_bodega' => $data['bodega'],
                 'inv_fechai' => $data['fechaCierre'],
                 'inv_codusu' => $data['usuario'],
-                // Otros campos según la lógica proporcionada
             ]
         );
 
-        Log::info('Operación de actualización en la tabla cminvent realizada con éxito.');
+        Log::info('Actualización en cminvent completada.', ['numeroDocumento' => $data['numeroDocumento']]);
+    }
 
-        // Obtener la colección de documentosDetalle
-        $detalles = $data['documentoDetalle'];
-
-        // Mapear la colección para preparar datos para la actualización en masa
-        $updates = collect($detalles)->map(function ($detalle) use ($data) {
+    /**
+     * Actualizar la tabla cmdetinv en masa.
+     */
+    private function actualizarCmdetinv($data)
+    {
+        $detalles = collect($data['documentoDetalle'])->map(function ($detalle) use ($data) {
             return [
                 'inv_numgui' => $data['numeroDocumento'],
                 'inv_produc' => $detalle['codigoProducto'],
                 'inv_descri' => $detalle['descripcion'],
                 'inv_cantid' => $detalle['cantidad'],
-                // Otros campos según la lógica proporcionada
             ];
         });
 
-        Log::info('Datos para la actualización en masa:', $updates->toArray());
+        cmdetinv::upsert($detalles->toArray(), ['inv_numgui', 'inv_produc']);
 
-        // Actualizar la tabla cmdetinv en masa
-        cmdetinv::upsert($updates, ['inv_numgui', 'inv_produc']);
-
-        // Log de información: Operación completada
-        Log::info('Operación de actualización en masa realizada con éxito.');
-
-        // Log de información: Fin de la operación
-        Log::info('Fin de la operación de actualización en la base de datos.');
-
+        Log::info('Actualización en cmdetinv completada.', ['totalRegistros' => count($detalles)]);
     }
 }

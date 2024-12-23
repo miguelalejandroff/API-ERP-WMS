@@ -9,83 +9,96 @@ use App\ERP\Handler\SaldoBodegaHandler2;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Http\JsonResponse;
 use Exception;
 
 class DespachoTransito implements OrdenEntradaService
 {
     protected $context;
+    protected $deleteDespachoController;
+    protected $respuestaDespachoController;
+    protected $saldoBodegaHandler;
 
-    public function __construct($context)
-    {
+    /**
+     * Constructor con inyección de dependencias.
+     */
+    public function __construct(
+        $context,
+        DeleteDespachoEnTransito $deleteDespachoController,
+        RespuestaDespachoController $respuestaDespachoController,
+        SaldoBodegaHandler2 $saldoBodegaHandler
+    ) {
         $this->context = $context;
+        $this->deleteDespachoController = $deleteDespachoController;
+        $this->respuestaDespachoController = $respuestaDespachoController;
+        $this->saldoBodegaHandler = $saldoBodegaHandler;
     }
 
-    public function run()
+    /**
+     * Ejecuta el proceso principal de despacho en tránsito.
+     */
+    public function run(): JsonResponse
     {
         DB::beginTransaction();
 
         try {
             $guiaRecepcion = $this->context->guiaRecepcion;
 
-            // Validación de datos obligatorios
+            // Validar guía de recepción
             $this->validateGuiaRecepcion($guiaRecepcion);
 
-            // Eliminar registros usando el controlador DeleteDespachoEnTransito
-            $this->getDeleteDespachoEnTransitoController()
-                ->eliminarRegistro($this->buildDeleteRequest($guiaRecepcion));
+            // Eliminar registros
+            $this->deleteDespachoController->eliminarRegistro($this->buildDeleteRequest($guiaRecepcion));
 
-            // Procesar respuesta de despacho
-            foreach ($guiaRecepcion->documentoDetalle as $detalle) {
-                $this->getRespuestaDespachoController()
-                    ->procesarRespuesta($this->buildRespuestaRequest($guiaRecepcion, $detalle));
-            }
+            // Procesar detalles de despacho
+            $this->procesarDetallesDespacho($guiaRecepcion);
 
-            // Actualizar saldos de bodega
-            $this->saldoBodegaHandler2($this->context);
+            // Actualizar saldo de bodega
+            $this->actualizarSaldoBodega($this->context);
 
             DB::commit();
 
-            return response()->json([
-                "success" => true,
-                "message" => "Proceso de despacho en tránsito completado sin problemas"
-            ], 200);
-
+            return $this->successResponse("Proceso de despacho en tránsito completado sin problemas.");
         } catch (Exception $e) {
             DB::rollBack();
 
-            Log::error('Error en DespachoTransito: ' . $e->getMessage(), [
+            Log::error('Error en DespachoTransito', [
+                'message' => $e->getMessage(),
                 'context' => $this->context
             ]);
 
-            return response()->json([
-                "success" => false,
-                "message" => $e->getMessage()
-            ], 500);
+            return $this->errorResponse($e->getMessage());
         }
     }
 
-    private function validateGuiaRecepcion($guiaRecepcion)
+    /**
+     * Valida los datos de la guía de recepción.
+     */
+    private function validateGuiaRecepcion($guiaRecepcion): void
     {
         if (empty($guiaRecepcion->numeroDocumento) || empty($guiaRecepcion->fechaRecepcionWMS)) {
             throw new Exception("Datos de guía de recepción incompletos: numeroDocumento o fechaRecepcionWMS faltantes.");
         }
     }
 
-    public function getDeleteDespachoEnTransitoController()
+    /**
+     * Procesa los detalles de despacho.
+     */
+    private function procesarDetallesDespacho($guiaRecepcion): void
     {
-        return app(DeleteDespachoEnTransito::class);
+        foreach ($guiaRecepcion->documentoDetalle as $detalle) {
+            $this->respuestaDespachoController
+                ->procesarRespuesta($this->buildRespuestaRequest($guiaRecepcion, $detalle));
+        }
     }
 
-    public function getRespuestaDespachoController()
-    {
-        return app(RespuestaDespachoController::class);
-    }
-
-    private function saldoBodegaHandler2($context)
+    /**
+     * Actualiza el saldo de bodega usando el handler.
+     */
+    private function actualizarSaldoBodega($context): void
     {
         try {
-            $handler = new SaldoBodegaHandler2();
-            $handler->handle($context);
+            $this->saldoBodegaHandler->handle($context);
             Log::info('Saldo de bodega actualizado correctamente.');
         } catch (Exception $e) {
             Log::error('Error al actualizar saldo de bodega: ' . $e->getMessage());
@@ -93,7 +106,10 @@ class DespachoTransito implements OrdenEntradaService
         }
     }
 
-    protected function buildDeleteRequest($guiaRecepcion)
+    /**
+     * Construye el request para eliminar despacho.
+     */
+    private function buildDeleteRequest($guiaRecepcion): Request
     {
         return new Request([
             'numeroDocumento' => $guiaRecepcion->numeroDocumento,
@@ -101,7 +117,10 @@ class DespachoTransito implements OrdenEntradaService
         ]);
     }
 
-    protected function buildRespuestaRequest($guiaRecepcion, $detalle)
+    /**
+     * Construye el request para procesar respuesta de despacho.
+     */
+    private function buildRespuestaRequest($guiaRecepcion, $detalle): Request
     {
         return new Request([
             'numeroDocumento' => $guiaRecepcion->numeroDocumento,
@@ -109,5 +128,27 @@ class DespachoTransito implements OrdenEntradaService
             'tipoDocumentoERP' => $guiaRecepcion->tipoDocumentoERP,
             'documentoDetalle' => $detalle,
         ]);
+    }
+
+    /**
+     * Retorna una respuesta JSON de éxito.
+     */
+    private function successResponse(string $message): JsonResponse
+    {
+        return response()->json([
+            "success" => true,
+            "message" => $message
+        ], 200);
+    }
+
+    /**
+     * Retorna una respuesta JSON de error.
+     */
+    private function errorResponse(string $message): JsonResponse
+    {
+        return response()->json([
+            "success" => false,
+            "message" => $message
+        ], 500);
     }
 }

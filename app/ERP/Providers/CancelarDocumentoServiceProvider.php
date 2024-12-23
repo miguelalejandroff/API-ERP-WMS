@@ -2,53 +2,80 @@
 
 namespace App\ERP\Providers;
 
-use App\Http\Controllers\ApiController;
 use App\ERP\Context\OrdenEntradaContext;
 use App\ERP\Contracts\CancelarDocumentoService;
-use App\ERP\Adapters\OrdenEntrada\DespachoTransito;
-use App\ERP\Enum\TipoDocumentoERP;
-use App\Exceptions\CustomException;
 use App\ERP\Adapters\OrdenEntrada\CancelarOrdSaldoAdapter;
 use App\ERP\Adapters\OrdenEntrada\InfAjustes;
+use App\ERP\Enum\TipoDocumentoERP;
+use App\Exceptions\CustomException;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Log;
 
 class CancelarDocumentoServiceProvider extends ServiceProvider
 {
     /**
-     * Register services.  
+     * Register services.
      *
      * @return void
      */
     public function register()
     {
-        /**
-         * Vincula la interfaz OrdenEntradaService a una función anónima que resuelve la implementación.
-         */
         $this->app->bind(CancelarDocumentoService::class, function ($app) {
-            $context = new OrdenEntradaContext($app->request->all());
-            switch ($context->recepcionWms->GetDocumento('tipoDocumentoERP')) {
-                case TipoDocumentoERP::SOLICITUD_RECEPCION->value;
-                    return new CancelarOrdSaldoAdapter($context);
-                    break;
+            // Crear y validar el contexto
+            $context = $this->crearContexto($app);
 
-                //case TipoDocumentoERP::GUIA_DEVOLUCION->value:
-                //case TipoDocumentoERP::GUIA_DESPACHO->value:
-                //case TipoDocumentoERP::TRASPASO_SUCURSAL->value:
-                    //return new InfAjustes($context);
-                    //break;
+            // Mapeo de tipos de documento a clases de adaptadores
+            $mapaAdaptadores = [
+                TipoDocumentoERP::SOLICITUD_RECEPCION->value => CancelarOrdSaldoAdapter::class,
+                TipoDocumentoERP::GUIA_DEVOLUCION->value => InfAjustes::class,
+                TipoDocumentoERP::GUIA_DESPACHO->value => InfAjustes::class,
+                TipoDocumentoERP::TRASPASO_SUCURSAL->value => InfAjustes::class,
+            ];
 
+            $tipoDocumento = $context->recepcionWms->GetDocumento('tipoDocumentoERP');
 
-            default:
-                throw new CustomException("El tipo de Documento: '{$context->recepcionWms->GetDocumento('tipoDocumentoERP')}' no coincide con ninguna categoría valida en el sistema", [], 500);
-
+            if (!isset($mapaAdaptadores[$tipoDocumento])) {
+                $this->lanzarExcepcionDocumentoNoValido($tipoDocumento);
             }
 
-            /**
-             * Crea un objeto de contexto para mantener los datos relevantes.
-             */
-            
+            Log::info('CancelarDocumentoService', ['tipoDocumento' => $tipoDocumento]);
+
+            // Instanciar el adaptador correspondiente
+            return new $mapaAdaptadores[$tipoDocumento]($context);
         });
+    }
+
+    /**
+     * Crea el contexto validado.
+     *
+     * @param mixed $app
+     * @return OrdenEntradaContext
+     */
+    private function crearContexto($app)
+    {
+        $request = $app->request;
+
+        // Validar y filtrar los datos relevantes
+        $datosFiltrados = $request->only([
+            'tipoDocumentoERP',
+            'numeroDocumento',
+            'detalles',
+        ]);
+
+        return new OrdenEntradaContext($datosFiltrados);
+    }
+
+    /**
+     * Lanza una excepción cuando el tipo de documento no es válido.
+     *
+     * @param string $tipoDocumento
+     * @throws CustomException
+     */
+    private function lanzarExcepcionDocumentoNoValido($tipoDocumento)
+    {
+        $mensaje = "El tipo de documento '{$tipoDocumento}' no coincide con ninguna categoría válida.";
+        Log::error('CancelarDocumentoService', ['error' => $mensaje]);
+        throw new CustomException($mensaje, [], 500);
     }
 
     /**
@@ -58,6 +85,5 @@ class CancelarDocumentoServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        //
     }
 }

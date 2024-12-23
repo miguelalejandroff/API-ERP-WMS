@@ -4,70 +4,97 @@ namespace App\ERP\Handler;
 
 use App\ERP\Context\OrdenEntradaContext;
 use Illuminate\Support\Facades\DB;
-use App\Exceptions\CustomException;
 use Illuminate\Support\Facades\Log;
 
 class CancelarOrdSaldoHandler
 {
-    public function actualizarDesdeWMS(OrdenEntradaContext $context)
+    /**
+     * Actualiza los saldos de la orden de compra desde WMS.
+     *
+     * @param OrdenEntradaContext $context
+     * @return array
+     */
+    public function actualizarDesdeWMS(OrdenEntradaContext $context): array
     {
         DB::beginTransaction();
 
         try {
-            // Variables para almacenar las cantidades de gui_canrep asociadas a cada ord_produc
-            $ordProducCantidad = [];
+            // Procesar cantidades recepcionadas por producto
+            $cantidadesPorProducto = $this->procesarCantidades($context);
 
-            // Iterar sobre los detalles de la solicitud de recepción
-            $context->solicitudRecepcion->iterarDetalle(function ($detalleSolicitud) use ($context, &$ordProducCantidad) {
-                // Obtener la cantidad de gui_canrep para este detalle de solicitud
-                $cantidad = $detalleSolicitud->gui_canrep;
-                // Obtener el ord_produc correspondiente al gui_produc
-                $ordProduc = $detalleSolicitud->gui_produc;
-
-                // Sumar la cantidad al arreglo de cantidades asociadas al ord_produc
-                if (!isset($ordProducCantidad[$ordProduc])) {
-                    $ordProducCantidad[$ordProduc] = 0;
-                }
-                $ordProducCantidad[$ordProduc] += $cantidad;
-            });
-
-            // Iterar sobre los detalles de la orden de compra y actualizar ord_saldos si hay coincidencia con ord_produc y gui_produc
-            $context->ordenCompra->iterarDetalle(function ($detalle) use ($context, $ordProducCantidad) {
-                // Verificar si ord_produc está presente en las cantidades asociadas a gui_produc
-                if (isset($ordProducCantidad[$detalle->ord_produc])) {
-                    // Obtener la cantidad correspondiente
-                    $cantidad = $ordProducCantidad[$detalle->ord_produc];
-
-                    // Crear los criterios de búsqueda
-                    $criteriosBusqueda = [
-                        'ord_numcom' => $detalle->ord_numcom,
-                        'ord_produc' => $detalle->ord_produc
-                    ];
-
-                    // Actualizar ord_saldos sumando la cantidad correspondiente
-                    $context->ordenCompra->guardarDetalle(
-                        function ($detalleCompra) use ($cantidad) {
-                            $detalleCompra->ord_saldos += $cantidad;
-                        },
-                        $criteriosBusqueda
-                    );
-                    $context->ordenCompra->guardarDocumento(
-                        function ($documento){
-                            $documento->ord_estado = 'P';
-                        },
-                        $criteriosBusqueda
-                    );
-                }
-            });
+            // Actualizar saldos de la orden de compra
+            $this->actualizarSaldos($context, $cantidadesPorProducto);
 
             DB::commit();
 
+            Log::info('CancelarOrdSaldoHandler', ['message' => 'Inventario actualizado correctamente']);
             return ['success' => true, 'message' => 'Inventario actualizado correctamente'];
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error al actualizar desde WMS:', ['error_message' => $e->getMessage()]);
-            Log::error('Error al actualizar desde WMS:', ['stack_trace' => $e->getTrace()]);
-            return ['success' => false, 'message' => $e->getMessage()];
+            Log::error('Error en CancelarOrdSaldoHandler', [
+                'message' => $e->getMessage(),
+                'stack_trace' => $e->getTraceAsString()
+            ]);
+            return ['success' => false, 'message' => 'Error al actualizar desde WMS'];
         }
+    }
+
+    /**
+     * Procesa las cantidades recepcionadas agrupadas por producto.
+     *
+     * @param OrdenEntradaContext $context
+     * @return array
+     */
+    private function procesarCantidades(OrdenEntradaContext $context): array
+    {
+        $cantidadesPorProducto = [];
+
+        $context->solicitudRecepcion->iterarDetalle(function ($detalleSolicitud) use (&$cantidadesPorProducto) {
+            $producto = $detalleSolicitud->gui_produc;
+            $cantidad = $detalleSolicitud->gui_canrep;
+
+            // Acumular cantidades por producto
+            $cantidadesPorProducto[$producto] = ($cantidadesPorProducto[$producto] ?? 0) + $cantidad;
+        });
+
+        Log::info('Cantidades agrupadas por producto', $cantidadesPorProducto);
+        return $cantidadesPorProducto;
+    }
+
+    /**
+     * Actualiza los saldos de la orden de compra.
+     *
+     * @param OrdenEntradaContext $context
+     * @param array $cantidadesPorProducto
+     */
+    private function actualizarSaldos(OrdenEntradaContext $context, array $cantidadesPorProducto): void
+    {
+        $context->ordenCompra->iterarDetalle(function ($detalle) use ($context, $cantidadesPorProducto) {
+            $producto = $detalle->ord_produc;
+
+            if (isset($cantidadesPorProducto[$producto])) {
+                $cantidad = $cantidadesPorProducto[$producto];
+
+                $criteriosBusqueda = [
+                    'ord_numcom' => $detalle->ord_numcom,
+                    'ord_produc' => $producto
+                ];
+
+                // Actualizar saldo
+                $context->ordenCompra->guardarDetalle(function ($detalleCompra) use ($cantidad) {
+                    $detalleCompra->ord_saldos += $cantidad;
+                }, $criteriosBusqueda);
+
+                // Cambiar el estado del documento
+                $context->ordenCompra->guardarDocumento(function ($documento) {
+                    $documento->ord_estado = 'P';
+                }, $criteriosBusqueda);
+
+                Log::info('Saldo actualizado para producto', [
+                    'producto' => $producto,
+                    'cantidad_sumada' => $cantidad
+                ]);
+            }
+        });
     }
 }

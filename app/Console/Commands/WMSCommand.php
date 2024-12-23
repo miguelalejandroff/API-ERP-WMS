@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\File;
 
 class WMSCommand extends Command
 {
@@ -11,14 +12,14 @@ class WMSCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'create:abstract {name}';
+    protected $signature = 'create:abstract {name : Nombre de la clase abstracta}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Create a new abstract class at app/WMS/Templates/Abstracts/';
+    protected $description = 'Crea una nueva clase abstracta en app/WMS/Templates/Abstracts/';
 
     /**
      * Execute the console command.
@@ -29,36 +30,59 @@ class WMSCommand extends Command
     {
         $name = $this->argument('name');
 
-        // Define the path and filename
+        // Validar el nombre de la clase
+        if (!$this->isValidClassName($name)) {
+            $this->error("El nombre de la clase '{$name}' no es válido. Debe cumplir con las reglas de nomenclatura de PHP.");
+            return Command::FAILURE;
+        }
+
+        // Definir ruta y nombre del archivo
         $path = app_path('WMS/Templates/Abstracts/');
         $filename = $path . $name . '.php';
 
-        // Check if file already exists
-        if (file_exists($filename)) {
-            $this->error("File already exists at {$filename}");
-            return 1;
+        // Crear el directorio si no existe
+        if (!File::exists($path)) {
+            File::makeDirectory($path, 0755, true);
+            $this->info("Directorio creado: {$path}");
         }
 
-        // Define the contents of the class
+        // Verificar si el archivo ya existe
+        if (File::exists($filename)) {
+            $this->error("El archivo ya existe en: {$filename}");
+            return Command::FAILURE;
+        }
+
+        // Definir el contenido de la clase
         $contents = <<<EOT
-            <?php
+<?php
 
-            namespace App\WMS\Templates\Abstracts;
+namespace App\WMS\Templates\Abstracts;
 
-            abstract class {$name} extends AbstractBase
-            {
-                        
-            }
-        EOT;
+abstract class {$name} extends AbstractBase
+{
+    // Agrega tus métodos abstractos aquí
+}
+EOT;
 
-        // Create the file
-        if (file_put_contents($filename, $contents) !== false) {
-            $this->info("Abstract class created successfully at {$filename}");
+        // Crear el archivo
+        if (File::put($filename, $contents)) {
+            $this->info("Clase abstracta creada exitosamente en: {$filename}");
+            return Command::SUCCESS;
         } else {
-            $this->error("Failed to create abstract class at {$filename}");
+            $this->error("No se pudo crear la clase abstracta en: {$filename}");
+            return Command::FAILURE;
         }
+    }
 
-
-        return Command::SUCCESS;
+    /**
+     * Verifica si el nombre de la clase es válido.
+     *
+     * @param string $name
+     * @return bool
+     */
+    private function isValidClassName(string $name): bool
+    {
+        // Verifica que el nombre solo contenga caracteres válidos para clases en PHP
+        return preg_match('/^[A-Z][A-Za-z0-9_]*$/', $name);
     }
 }

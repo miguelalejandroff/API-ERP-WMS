@@ -6,174 +6,158 @@ use App\Models\cmguias;
 use App\Models\cmdetgui;
 use App\Models\cmbodega;
 use Illuminate\Http\Request;
-use Exception;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
+use Exception;
 
 class AjustePositivoController extends Controller
 {
     public function actualizarDesdeWMS(Request $request)
     {
-        $request->validate([
-            'numeroDocumento'  => 'required',
-            'fechaRecepcionWMS'  => 'required|date',
-            'usuario'  => 'required',
-            'documentoDetalle' => 'required|array',
-            'documentoDetalle.*.codigoProducto' => 'required|string',
-            'documentoDetalle.*.BodegaOrigen' => 'required|numeric',
-            'documentoDetalle.*.cantidad' => 'required|numeric',
-            'documentoDetalle.*.descripcion' => 'required|string'
-        ]);
+        $this->validateRequest($request);
 
-        // Definir la variable 
         $fechaRecepcionWMS = Carbon::parse($request->input('fechaRecepcionWMS'))->startOfDay();
-        $fechaActual = Carbon::now()->startOfDay();
-
-
-        Log::info('Fecha de recepción WMS:', ['fechaRecepcionWMS' => $fechaRecepcionWMS]);
-        Log::info('Fecha actual:', ['fechaActual' => $fechaActual]);
-
-        // Validar que la fecha no sea futura
-        if ($fechaRecepcionWMS->greaterThan($fechaActual)) {
-            Log::error('La fecha de recepción no puede ser futura.', ['fechaRecepcionWMS' => $fechaRecepcionWMS, 'fechaActual' => $fechaActual]);
-            return response()->json(['message' => 'La fecha de recepción no puede ser futura.'], 422);
-        }
-
+        $this->validateFechaRecepcion($fechaRecepcionWMS);
 
         DB::beginTransaction();
 
         try {
+            $nuevoGuiNumero = $this->generarNuevoGuiNumero($fechaRecepcionWMS);
+            $this->guardarGuias($request, $nuevoGuiNumero);
+            $this->guardarDetalles($request, $nuevoGuiNumero);
 
-            // Obtener el primer elemento del arreglo documentoDetalle
-            $primerDetalle = $request->json('documentoDetalle')[0];
-
-            // Obtener la fecha del JSON en lugar de la fecha actual de la aplicación Laravel
-            $fechaRecepcionWMS = $request->json('fechaRecepcionWMS');
-            $fechaActual = Carbon::parse($fechaRecepcionWMS);
-            $añoActual = $fechaActual->format('y'); // Obtener el año
-            $mesActual = $fechaActual->format('m'); // Obtener el mes
-
-            // Obtener el último valor de gui_numero en la tabla cmguias con gui_tipgui 02 o 10
-            // Obtener el último valor de gui_numero en la tabla cmguias para el año y mes proporcionados en el JSON
-            $ultimoGuiNumero = cmguias::whereIn('gui_tipgui', ['02', '10'])
-                ->whereYear('gui_fechag', $fechaActual->year)
-                ->whereMonth('gui_fechag', $fechaActual->month)
-                ->where(DB::raw("CAST(SUBSTRING(gui_numero FROM 1 FOR 4) AS INTEGER)"), '=', intval($añoActual . $mesActual))
-                ->max('gui_numero');
-
-
-            // Log del último número obtenido de la base de datos
-            Log::info('Ultimo valor de gui_numero obtenido de la base de datos: ' . $ultimoGuiNumero);
-
-            // Inicializar el correlativo secuencial
-            $correlativoSecuencial = 1;
-
-            // Si hay un número anterior y pertenece al mes actual, incrementar el correlativo
-            if ($ultimoGuiNumero !== null && substr($ultimoGuiNumero, 2, 2) == $mesActual) {
-                $correlativoSecuencial = intval(substr($ultimoGuiNumero, -3)) + 1;
-            }
-
-
-            // Combinar los componentes para formar el número completo
-            $nuevoGuiNumero = $añoActual . $mesActual . sprintf("%03d", $correlativoSecuencial);
-
-            Log::info('Nuevo valor de gui_numero: ' . $nuevoGuiNumero);
-
-            // Obtener el valor de BodegaOrigen del primer detalle
-            $bodegaOrigen = $primerDetalle['BodegaOrigen'];
-            $gui_fechag = Carbon::parse($request->json('fechaRecepcionWMS'))->format('Y-m-d');
-            $numeroDocumento = $request->json('numeroDocumento');
-            $cmbodega = cmbodega::where('bod_codigo', $bodegaOrigen)->first();
-
-
-            cmguias::updateOrCreate(
-                [
-                    'gui_numero' => $nuevoGuiNumero,
-                    'gui_guipro' => $numeroDocumento,
-                    'gui_fechag' => $gui_fechag,
-                    'gui_tipgui' => "02",
-                    'gui_sucori' => $cmbodega->bod_codsuc,
-                    'gui_sucdes' => "0",
-                    'gui_paract' => "N",
-                    'gui_fecmod' => $gui_fechag,
-                    'gui_codusu' => $request->json('usuario'),
-                    'gui_empres' => 1
-
-                ]
-            );
-
-
-            Log::info('Operación de actualización en la tabla cmdetgui realizada con éxito.');
-
-            foreach ($request->json('documentoDetalle') as $detalle) {
-                $codigoProducto = strtolower($detalle['codigoProducto']);
-                $producto = cmdetgui::whereRaw('LOWER(gui_produc) = ?', [$codigoProducto])->first();
-                if (!$producto) {
-                    throw new Exception('El Producto código ' . $detalle['codigoProducto'] . ' no existe.');
-                }
-                $gui_preuni = $producto->cmproductos->pro_cosmed;
-                $cantidad = abs($detalle['cantidad']);
-                Log::info('Valor de gui_preuni:', ['valor' => $gui_preuni]);
-                cmdetgui::updateOrInsert(
-                    [
-                        'gui_numero' => $nuevoGuiNumero,
-                        'gui_produc' => $detalle['codigoProducto'],
-                        'gui_bodori' => $detalle['BodegaOrigen'],
-                        'gui_boddes' => "0",
-                        'gui_tipgui' => "02",
-                        'gui_descri' => $detalle['descripcion'],
-                        'gui_canord' => "0",
-                        'gui_canrep' => $cantidad,
-                        'gui_preuni' => $gui_preuni
-                        // Otros campos según la lógica proporcionada
-                    ]
-                );
-            }
-
-            // Actualizar la tabla cmdetinv en masa
             DB::commit();
-
             $this->enviaOrdenSalidaWms(['ajuste' => $nuevoGuiNumero . '02']);
 
             return response()->json(['message' => 'AjustePositivo actualizado correctamente']);
         } catch (Exception $e) {
             DB::rollBack();
-            Log::error('Error al actualizar desde WMS:', [
+            Log::error('Error al actualizar ajuste positivo:', [
                 'error_message' => $e->getMessage(),
                 'request_data' => $request->all()
             ]);
-            throw $e;
+            return response()->json(['message' => 'Error al procesar el ajuste positivo', 'error' => $e->getMessage()], 500);
         }
     }
 
-    public function enviaOrdenSalidaWms($document = [])
+    /**
+     * Valida la estructura de la solicitud.
+     */
+    private function validateRequest($request)
+    {
+        $request->validate([
+            'numeroDocumento' => 'required',
+            'fechaRecepcionWMS' => 'required|date',
+            'usuario' => 'required',
+            'documentoDetalle' => 'required|array',
+            'documentoDetalle.*.codigoProducto' => 'required|string',
+            'documentoDetalle.*.BodegaOrigen' => 'required|string',
+            'documentoDetalle.*.cantidad' => 'required|numeric',
+            'documentoDetalle.*.descripcion' => 'required|string'
+        ]);
+    }
+
+    /**
+     * Valida que la fecha de recepción no sea futura.
+     */
+    private function validateFechaRecepcion($fechaRecepcionWMS)
+    {
+        $fechaActual = Carbon::now()->startOfDay();
+        if ($fechaRecepcionWMS->greaterThan($fechaActual)) {
+            throw new Exception('La fecha de recepción no puede ser futura.');
+        }
+    }
+
+    /**
+     * Genera un nuevo número de guía correlativo.
+     */
+    private function generarNuevoGuiNumero($fechaRecepcionWMS)
+    {
+        $añoActual = $fechaRecepcionWMS->format('y');
+        $mesActual = $fechaRecepcionWMS->format('m');
+
+        $ultimoGuiNumero = cmguias::whereIn('gui_tipgui', ['02', '10'])
+            ->whereYear('gui_fechag', $fechaRecepcionWMS->year)
+            ->whereMonth('gui_fechag', $fechaRecepcionWMS->month)
+            ->max('gui_numero');
+
+        $correlativoSecuencial = $ultimoGuiNumero && substr($ultimoGuiNumero, 2, 2) == $mesActual
+            ? intval(substr($ultimoGuiNumero, -3)) + 1
+            : 1;
+
+        return $añoActual . $mesActual . sprintf("%03d", $correlativoSecuencial);
+    }
+
+    /**
+     * Guarda la guía en la base de datos.
+     */
+    private function guardarGuias($request, $nuevoGuiNumero)
+    {
+        $primerDetalle = $request->json('documentoDetalle')[0];
+        $bodegaOrigen = $primerDetalle['BodegaOrigen'];
+        $cmbodega = cmbodega::where('bod_codigo', $bodegaOrigen)->first();
+
+        cmguias::updateOrCreate([
+            'gui_numero' => $nuevoGuiNumero,
+            'gui_guipro' => $request->input('numeroDocumento'),
+            'gui_fechag' => Carbon::parse($request->input('fechaRecepcionWMS'))->format('Y-m-d'),
+            'gui_tipgui' => "02",
+            'gui_sucori' => $cmbodega->bod_codsuc,
+            'gui_sucdes' => "0",
+            'gui_paract' => "N",
+            'gui_fecmod' => Carbon::now()->format('Y-m-d'),
+            'gui_codusu' => $request->input('usuario'),
+            'gui_empres' => 1
+        ]);
+    }
+
+    /**
+     * Guarda los detalles de la guía en la base de datos.
+     */
+    private function guardarDetalles($request, $nuevoGuiNumero)
+    {
+        foreach ($request->json('documentoDetalle') as $detalle) {
+            $codigoProducto = strtolower($detalle['codigoProducto']);
+            $producto = cmdetgui::whereRaw('LOWER(gui_produc) = ?', [$codigoProducto])->first();
+
+            if (!$producto) {
+                throw new Exception('El Producto código ' . $detalle['codigoProducto'] . ' no existe.');
+            }
+
+            cmdetgui::updateOrInsert([
+                'gui_numero' => $nuevoGuiNumero,
+                'gui_produc' => $detalle['codigoProducto'],
+                'gui_bodori' => $detalle['BodegaOrigen'],
+                'gui_boddes' => "0",
+                'gui_tipgui' => "02",
+                'gui_descri' => $detalle['descripcion'],
+                'gui_canord' => "0",
+                'gui_canrep' => abs($detalle['cantidad']),
+                'gui_preuni' => $producto->cmproductos->pro_cosmed
+            ]);
+        }
+    }
+
+    /**
+     * Envía los datos al sistema WMS.
+     */
+    private function enviaOrdenSalidaWms($document = [])
     {
         try {
             $url = url('/WMS/CreateOrdenEntrada');
             $response = Http::post($url, $document);
 
             if ($response->failed()) {
-                $statusCode = $response->status();
-                $errorMessage = 'Error al enviar la orden de salida a WMS: ' . $response->body();
-                Log::error($errorMessage, ['status_code' => $statusCode, 'document' => $document]);
-                throw new Exception($errorMessage);
+                throw new Exception('Error al enviar la orden de salida a WMS: ' . $response->body());
             }
 
-            Log::info('Orden de salida enviada exitosamente al WMS', [
-                'document' => $document,
-                'response' => $response->body()
-            ]);
-
-            return $response->body(); // Devuelve la respuesta del WMS
+            Log::info('Orden enviada exitosamente a WMS', ['response' => $response->body()]);
+            return $response->body();
         } catch (Exception $e) {
-            Log::error('Error al enviar la orden de salida a WMS:', [
-                'error_message' => $e->getMessage(),
-                'document' => $document
-            ]);
-
-            return null; // Devuelve null en caso de error
+            Log::error('Error al enviar la orden de salida a WMS:', ['error_message' => $e->getMessage()]);
+            throw $e;
         }
     }
 }

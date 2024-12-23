@@ -11,97 +11,136 @@ use App\Logs\Log;
 use App\Models\cmclientes;
 use App\Models\cmordcom;
 use App\Models\enlacepromo;
-use Exception;
 use Illuminate\Support\Facades\DB;
+use Exception;
 
 class OrdenCompraRecepcion extends Adapter implements ERPOrdenEntradaService
 {
-    private $observers = [];
-    /*
-    public function addObserver(OrdenObserver $observer)
-    {
-        $this->observers[] = $observer;
-    }
-    private function notify($ordenCompra)
-    {
-        foreach ($this->observers as $observer) {
-            $observer->handle($ordenCompra);
-        }
-    }*/
+    /**
+     * Ejecuta el proceso de recepción de orden de compra.
+     *
+     * @param object $recepcion
+     * @param array $recepcionDetalle
+     * @param string $trackingId
+     * @return void
+     */
     public function run($recepcion, $recepcionDetalle, $trackingId)
     {
-        Log::info('/OrdenCompraRececpcion', json_encode($recepcion), $trackingId);
-
-        return [$recepcion, $recepcionDetalle, $trackingId];
         DB::beginTransaction();
+
         try {
-            //throw new Exception("prueba", 500);
-            $ordenCompra = cmordcom::Orden($recepcion->numeroOrden);
+            Log::info('/OrdenCompraRececpcion - Inicio', ['trackingId' => $trackingId]);
 
-            if (!$ordenCompra) {
-                throw new Exception("Orden de Compra no Existe: {$ordenCompra->ord_numcom}", 500);
-            }
+            // Obtener orden de compra
+            $ordenCompra = $this->getOrdenCompra($recepcion->numeroOrden);
 
-            switch ($ordenCompra->ord_estado) {
-                case 'R':
-                    throw new Exception("Orden de Compra Recepcionada: {$ordenCompra->ord_numcom}", 500);
-                case 'A':
-                    throw new Exception("Orden de Compra Anulada: {$ordenCompra->ord_numcom}", 500);
-                case 'C':
-                    throw new Exception("Orden de Compra Cerrada: {$ordenCompra->ord_numcom}", 500);
-                case 'P':
+            // Procesar orden según su estado
+            $this->validarEstadoOrdenCompra($ordenCompra);
 
-                    $ordenCompraBonificada = null;
+            // Procesar recepción
+            $this->procesarRecepcion($recepcion, $recepcionDetalle, $ordenCompra);
 
-                    if ($ordenCompra->cmenlbon?->bon_ordbon) {
-                        $ordenCompraBonificada = cmordcom::Orden($ordenCompra->cmenlbon->bon_ordbon);
-                    }
+            // Actualizar estado de la orden si el saldo es cero
+            $this->actualizarEstadoOrden($ordenCompra);
 
-                    $proveedor = cmclientes::Cliente($recepcion->codProveedor);
-
-                    $cantidadNormal = 0;
-                    $cantidadPromo = 0;
-
-                    foreach ($recepcionDetalle as &$row) {
-
-                        $row->precio = $ordenCompra->buscaProducto($row->codigoProducto)->first()->calculaCosto->precioCalculado;
-
-                        $promocion = enlacepromo::where('codigo_promos', $row->codigoProducto)->first();
-
-                        // Crear una instancia de la clase SaldoOrden
-                        new SaldoOrden($ordenCompra, $ordenCompraBonificada, $row->codigoProducto, $row->cantidadRecepcionada, function ($message) {
-                            throw new Exception($message, 500);
-                        });
-
-                        if (!$promocion) {
-                            $row->promocion = false;
-                            $cantidadNormal++;
-                            continue;
-                        }
-
-                        $row->promocion = true;
-
-                        $cantidadPromo++;
-                    }
-
-                    new GuiaCompra($recepcion, $recepcionDetalle, $ordenCompra, $proveedor, function ($message) {
-                        throw new Exception($message, 500);
-                    });
-
-                    new GuiaRecepcion($recepcion, $recepcionDetalle, $ordenCompra, $proveedor, $cantidadPromo, $cantidadNormal, function ($message) {
-                        throw new Exception($message, 500);
-                    });
-
-                    if ($ordenCompra->cmdetord->sum('ord_saldos') == 0) {
-                        $ordenCompra->update(['ord_estado' => "R"]);
-                    }
-            }
             DB::commit();
-            //Log::info('/OrdenCompraRececpcion', "Proceso de Recepcion sin problemas", $trackingId);
-        } catch (\Exception $e) {
+
+            Log::info('/OrdenCompraRececpcion - Proceso completado', ['trackingId' => $trackingId]);
+        } catch (Exception $e) {
             DB::rollBack();
-            Log::error('/OrdenCompraRececpcion', $e->getMessage(), $trackingId);
-            die();
+            Log::error('/OrdenCompraRececpcion - Error', [
+                'message' => $e->getMessage(),
+                'trackingId' => $trackingId
+            ]);
+
+            throw new Exception("Error en el proceso de recepción de la orden de compra: " . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Obtiene la orden de compra.
+     */
+    private function getOrdenCompra($numeroOrden)
+    {
+        $ordenCompra = cmordcom::Orden($numeroOrden);
+
+        if (!$ordenCompra) {
+            throw new Exception("Orden de Compra no Existe: {$numeroOrden}");
+        }
+
+        return $ordenCompra;
+    }
+
+    /**
+     * Valida el estado de la orden de compra.
+     */
+    private function validarEstadoOrdenCompra($ordenCompra)
+    {
+        $estadosInvalidos = [
+            'R' => "Orden de Compra Recepcionada",
+            'A' => "Orden de Compra Anulada",
+            'C' => "Orden de Compra Cerrada"
+        ];
+
+        if (isset($estadosInvalidos[$ordenCompra->ord_estado])) {
+            throw new Exception("{$estadosInvalidos[$ordenCompra->ord_estado]}: {$ordenCompra->ord_numcom}");
+        }
+    }
+
+    /**
+     * Procesa la recepción de la orden.
+     */
+    private function procesarRecepcion($recepcion, $recepcionDetalle, $ordenCompra)
+    {
+        $proveedor = cmclientes::Cliente($recepcion->codProveedor);
+        $cantidadNormal = 0;
+        $cantidadPromo = 0;
+
+        foreach ($recepcionDetalle as &$row) {
+            $producto = $ordenCompra->buscaProducto($row->codigoProducto)->first();
+
+            $row->precio = $producto->calculaCosto->precioCalculado ?? 0;
+
+            $promocion = enlacepromo::where('codigo_promos', $row->codigoProducto)->first();
+
+            // Procesar saldo de la orden
+            new SaldoOrden(
+                $ordenCompra,
+                null,
+                $row->codigoProducto,
+                $row->cantidadRecepcionada,
+                function ($message) {
+                    throw new Exception($message);
+                }
+            );
+
+            if (!$promocion) {
+                $row->promocion = false;
+                $cantidadNormal++;
+                continue;
+            }
+
+            $row->promocion = true;
+            $cantidadPromo++;
+        }
+
+        // Procesar guías
+        new GuiaCompra($recepcion, $recepcionDetalle, $ordenCompra, $proveedor, function ($message) {
+            throw new Exception($message);
+        });
+
+        new GuiaRecepcion($recepcion, $recepcionDetalle, $ordenCompra, $proveedor, $cantidadPromo, $cantidadNormal, function ($message) {
+            throw new Exception($message);
+        });
+    }
+
+    /**
+     * Actualiza el estado de la orden si no hay saldo.
+     */
+    private function actualizarEstadoOrden($ordenCompra)
+    {
+        if ($ordenCompra->cmdetord->sum('ord_saldos') == 0) {
+            $ordenCompra->update(['ord_estado' => "R"]);
         }
     }
 }

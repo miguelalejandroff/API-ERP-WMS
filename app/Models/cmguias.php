@@ -58,7 +58,7 @@ class cmguias extends Model
 
     public function folioguia()
     {
-        return $this->hasOne(despachodetalle::class, 'des_numgui', 'gui_numero'); 
+        return $this->hasOne(despachoencab::class, 'des_numgui', 'gui_numero'); 
     }
 
     public function folioPedido()

@@ -2,75 +2,97 @@
 
 namespace App\ERP\Traits;
 
-use App\Models\guidetcompra;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Collection;
 
 trait DetalleTrait
 {
     /**
-     * @var object $ordenCompra define la orden de compra.
+     * @var Collection $documentoDetalle
      */
     private $documentoDetalle;
 
-
     /**
-     * Devuelve detalles de la orden o elementos específicos basados en clave y valor.
+     * Obtiene detalles de la orden o filtra por clave y valor.
      *
      * @param string|null $clave La clave para filtrar los detalles.
      * @param mixed $valor El valor asociado a la clave para filtrar.
-     * @return Illuminate\Support\Collection|mixed Colección filtrada o elemento específico.
+     * @return Collection|mixed
      */
     public function getDetalle($clave = null, $valor = null)
     {
-        if ($clave === null) {
+        if (is_null($clave)) {
             return $this->documentoDetalle;
         }
 
-        // Filtrar la colección basándose en la clave y el valor
-        return $this->documentoDetalle->filter(function ($item) use ($clave, $valor) {
-            return isset($item[$clave]) && $item[$clave] == $valor;
-        })->first();
+        return $this->documentoDetalle->filter(fn($item) => isset($item[$clave]) && $item[$clave] == $valor)->first();
     }
 
+    /**
+     * Configura el detalle de la orden.
+     *
+     * @param Collection|array $detalle
+     * @throws \InvalidArgumentException
+     */
     public function setDetalle($detalle)
     {
+        if (is_array($detalle)) {
+            $detalle = collect($detalle);
+        }
+
+        if (!$detalle instanceof Collection) {
+            throw new \InvalidArgumentException("El detalle debe ser una instancia de Collection o un array.");
+        }
+
         $this->documentoDetalle = $detalle;
     }
 
     /**
-     * Itera sobre cada detalle de la orden de compra y aplica una función callback.
+     * Itera sobre cada detalle y aplica una función callback.
      *
-     * @param callable $callback La función callback a aplicar a cada detalle.
+     * @param callable $callback
      */
     public function iterarDetalle(callable $callback)
     {
-        foreach ($this->documentoDetalle as &$detalle) {
-            $callback($detalle);
-        }
+        $this->documentoDetalle->each($callback);
     }
 
-    public function guardarDetalle(callable $callbackDetalle, $criteriosBusquedad = null)
+    /**
+     * Guarda un detalle, actualizándolo si existe o creándolo si no.
+     *
+     * @param callable $callbackDetalle Callback para definir los atributos del detalle.
+     * @param array|null $criteriosBusqueda Criterios para buscar el detalle existente.
+     * @throws \Throwable
+     */
+    public function guardarDetalle(callable $callbackDetalle, $criteriosBusqueda = null)
     {
-        // Obtener el modelo del detalle
-        $modeloDetalle = $this->modeloDocumentoDetalle;
-    
-        // Si hay criterios de búsqueda, intentar encontrar el detalle existente
-        if (!is_null($criteriosBusquedad)) {
-            $detalleExistente = $modeloDetalle::where($criteriosBusquedad)->first();
+        try {
+            /** @var Model $modeloDetalle */
+            $modeloDetalle = $this->modeloDocumentoDetalle;
+
+            $detalle = null;
+
+            // Buscar detalle existente si hay criterios de búsqueda
+            if (!is_null($criteriosBusqueda)) {
+                $detalle = $modeloDetalle::where($criteriosBusqueda)->first();
+            }
+
+            // Crear una nueva instancia si no existe
+            if (!$detalle) {
+                $detalle = new $modeloDetalle;
+            }
+
+            // Aplicar callback para asignar valores
+            $callbackDetalle($detalle);
+
+            // Guardar el detalle
+            $detalle->saveOrFail();
+
+            Log::info("Detalle guardado exitosamente.", ['detalle' => $detalle]);
+        } catch (\Exception $e) {
+            Log::error("Error al guardar el detalle.", ['error' => $e->getMessage()]);
+            throw $e;
         }
-    
-        // Si existe un detalle, actualizarlo; de lo contrario, crear uno nuevo
-        if (isset($detalleExistente)) {
-            $detalle = $detalleExistente;
-        } else {
-            $detalle = new $modeloDetalle;
-        }
-    
-        // Aplicar la función de callback al detalle
-        $callbackDetalle($detalle);
-    
-        // Guardar el detalle
-        $detalle->saveOrFail();
     }
-    
 }

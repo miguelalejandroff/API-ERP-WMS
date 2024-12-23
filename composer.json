@@ -11,6 +11,7 @@
         "laravel/framework": "^9.19",
         "laravel/sanctum": "^3.0",
         "laravel/tinker": "^2.7",
+        "league/csv": "^9.20",
         "miguelalejandroff/laramix": "1.0.0.x-dev",
         "smalot/pdfparser": "^2.5",
         "spatie/array-to-xml": "^3.1"

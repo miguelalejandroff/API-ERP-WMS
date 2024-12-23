@@ -2,95 +2,112 @@
 
 namespace App\ERP;
 
-use App\ERP\Adapters\OrdenEntrada\Guia;
-use App\ERP\Adapters\OrdenEntrada\NotaCredito;
-use App\ERP\Adapters\OrdenEntrada\OrdenCompraRecepcion;
-use App\ERP\Adapters\OrdenEntrada\SolicitudRecepcion;
-use App\ERP\Adapters\OrdenEntrada\DespachoTransito;
-use App\ERP\Contracts\OrdenEntradaService;
-use App\ERP\Contracts\InventarioService;
-use App\ERP\Contracts\AjustePositivoService;
-use App\ERP\Contracts\AjusteNegativoService;
-use App\ERP\Contracts\TraspasoBodegaService;
-use App\ERP\Contracts\CancelarDocumentoService;
-use App\ERP\Contracts\OrdenSalidaService;
+use App\ERP\Contracts\{
+    OrdenEntradaService,
+    InventarioService,
+    AjustePositivoService,
+    AjusteNegativoService,
+    TraspasoBodegaService,
+    CancelarDocumentoService,
+    OrdenSalidaService
+};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use RuntimeException;
 
 class EndpointERP
 {
-    public function __construct(public Request $request)
-    {
-    }
-    public function confirmarOrdenEntrada(OrdenEntradaService $ordenEntrada)
-    {
+    public function __construct(public Request $request) {}
 
-        if ($ordenEntrada instanceof SolicitudRecepcion) {
-            return $ordenEntrada->run();
-        }
-
-        if ($ordenEntrada instanceof DespachoTransito) {
-            return $ordenEntrada->run();
-        }
-    }
-
-    public function confirmarOrdenEntrada2(Request $orden)
-    {
-        dd($orden);
-        if ($orden instanceof OrdenCompraRecepcion) {
-            return response()->json(["message" => "Orden de compra Recepcionada"]);
-        }
-        if ($orden instanceof NotaCredito) {
-            return response()->json(["message" => "Nota de credito Recepcionada"]);
-        }
-        if ($orden instanceof Guia) {
-            return response()->json(["message" => "Guia Recepcionada"]);
-        }
-    }
-    public function confirmarInventario(InventarioService $inventario)
+    /**
+     * Generaliza la ejecución de servicios ERP con manejo de excepciones.
+     */
+    private function executeService($service, string $operation, array $messages = [])
     {
         try {
-            Log::info('Inicio de confirmarInventario');
-    
-            // Ejecutar el servicio de inventario
-            $response = $inventario->run();
-    
-            Log::info('Operación confirmarInventario completada');
-    
+            Log::info("Inicio de {$operation}");
+
+            // Ejecutar el servicio
+            $response = $service->run();
+
+            // Respuesta específica basada en clase si se proporciona
+            if (!empty($messages)) {
+                foreach ($messages as $class => $message) {
+                    if ($service instanceof ("App\\ERP\\Adapters\\OrdenEntrada\\{$class}")) {
+                        return response()->json(["message" => $message]);
+                    }
+                }
+                return response()->json(["error" => "Tipo de operación no reconocido"], 400);
+            }
+
+            Log::info("Operación {$operation} completada");
             return $response;
         } catch (\Exception $e) {
-            Log::error('Error en confirmarInventario: ' . $e->getMessage());
-    
-            // Puedes manejar el error según tus necesidades
-            return response()->json(['error' => 'Ocurrió un error en confirmarInventario'], 500);
+            return $this->handleException($e, $operation);
         }
     }
-    
+
+    public function confirmarOrdenEntrada(OrdenEntradaService $ordenEntrada)
+    {
+        return $this->executeService($ordenEntrada, 'confirmarOrdenEntrada');
+    }
+
+    public function confirmarOrdenEntrada2(OrdenEntradaService $ordenEntrada)
+    {
+        $messages = [
+            'OrdenCompraRecepcion' => "Orden de compra Recepcionada",
+            'NotaCredito' => "Nota de crédito Recepcionada",
+            'Guia' => "Guía Recepcionada"
+        ];
+
+        return $this->executeService($ordenEntrada, 'confirmarOrdenEntrada2', $messages);
+    }
+
+    public function confirmarInventario(InventarioService $inventario)
+    {
+        return $this->executeService($inventario, 'confirmarInventario');
+    }
 
     public function confirmarAjustePositivo(AjustePositivoService $ajustePositivo)
     {
-        return $ajustePositivo->run();
+        return $this->executeService($ajustePositivo, 'confirmarAjustePositivo');
     }
 
     public function confirmarAjusteNegativo(AjusteNegativoService $ajusteNegativo)
     {
-        return $ajusteNegativo->run();
+        return $this->executeService($ajusteNegativo, 'confirmarAjusteNegativo');
     }
 
     public function confirmarTraspasoBodega(TraspasoBodegaService $traspasoBodega)
     {
-        return $traspasoBodega->run();
+        return $this->executeService($traspasoBodega, 'confirmarTraspasoBodega');
     }
 
     public function confirmarOrdenSalida(OrdenSalidaService $ordenSalida)
     {
-        return $ordenSalida->run();
+        return $this->executeService($ordenSalida, 'confirmarOrdenSalida');
     }
 
-    public function confirmarCancelarDocumento (CancelarDocumentoService $cancelarDocumento)
+    public function confirmarCancelarDocumento(CancelarDocumentoService $cancelarDocumento)
     {
-        return $cancelarDocumento->run();
+        return $this->executeService($cancelarDocumento, 'confirmarCancelarDocumento');
     }
 
+    /**
+     * Manejo centralizado de excepciones.
+     *
+     * @param \Exception $e
+     * @param string $operation
+     * @return \Illuminate\Http\JsonResponse
+     */
+    private function handleException(\Exception $e, $operation)
+    {
+        Log::error("Error en {$operation}: " . $e->getMessage(), [
+            'stack_trace' => $e->getTraceAsString(),
+        ]);
+
+        return response()->json([
+            'error' => "Ocurrió un error en {$operation}",
+            'details' => $e->getMessage()
+        ], 500);
+    }
 }

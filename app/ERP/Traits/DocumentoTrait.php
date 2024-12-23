@@ -2,49 +2,90 @@
 
 namespace App\ERP\Traits;
 
-use App\Models\guicompra;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
+use Exception;
 
 trait DocumentoTrait
 {
-
     /**
-     * @var object $ordenCompra define la orden de compra.
+     * @var Model|null $documento La instancia del documento.
      */
     private $documento;
+
     /**
-     * Devuelve la orden de compra o un valor específico si se proporciona una clave.
+     * Obtiene el documento completo o un valor específico por clave.
      *
-     * @param string|null $clave La clave del valor que se desea obtener de la orden.
-     * @return mixed La orden de compra completa o el valor de la clave especificada.
+     * @param string|null $clave La clave específica a obtener.
+     * @return mixed|null Devuelve el documento completo o el valor de la clave especificada.
      */
     public function getDocumento($clave = null)
     {
-        if ($clave === null) {
+        if (is_null($clave)) {
             return $this->documento;
         }
 
-        if (isset($this->documento->$clave)) {
-            return $this->documento->$clave;
-        }
-
-        // Opcional: Manejar el caso de que la clave no exista.
-        return null;
+        return $this->documento->{$clave} ?? null;
     }
 
+    /**
+     * Establece el documento.
+     *
+     * @param Model $documento Instancia del documento.
+     * @throws \InvalidArgumentException
+     */
     public function setDocumento($documento)
     {
+        if (!$documento instanceof Model) {
+            throw new \InvalidArgumentException("El documento debe ser una instancia de Illuminate\Database\Eloquent\Model.");
+        }
+
         $this->documento = $documento;
     }
 
-    public function guardarDocumento(callable $callback)
+    /**
+     * Guarda el documento aplicando un callback para actualizar sus valores.
+     *
+     * @param callable $callback Callback para establecer los valores del documento.
+     * @return Model Devuelve la instancia del documento guardado.
+     * @throws \Throwable
+     */
+    public function guardarDocumento(callable $callback): Model
     {
-        $documento = $this->documento ?? new $this->modeloDocumento;
+        try {
+            // Cargar el documento actual o crear una nueva instancia
+            $documento = $this->documento ?? new $this->modeloDocumento;
 
-        $callback($documento);
+            // Aplicar el callback para definir valores
+            $callback($documento);
 
-        $documento->saveOrFail();
+            // Guardar el documento
+            $documento->saveOrFail();
 
-        $this->cargarDocumento($documento->{$this->claveDocumento});
+            // Recargar el documento después de guardarlo
+            $this->cargarDocumento($documento->{$this->claveDocumento});
+
+            Log::info("Documento guardado exitosamente.", ['documento' => $documento]);
+
+            return $documento;
+        } catch (Exception $e) {
+            Log::error("Error al guardar el documento.", ['error' => $e->getMessage()]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Carga el documento usando su clave primaria.
+     *
+     * @param mixed $claveDocumento Valor de la clave primaria del documento.
+     * @return void
+     */
+    protected function cargarDocumento($claveDocumento)
+    {
+        $modelo = $this->modeloDocumento;
+
+        $this->documento = $modelo::findOrFail($claveDocumento);
+
+        Log::info("Documento recargado con éxito.", ['documento_id' => $claveDocumento]);
     }
 }

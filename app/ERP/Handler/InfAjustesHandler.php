@@ -4,64 +4,93 @@ namespace App\ERP\Handler;
 
 use App\ERP\Context\OrdenEntradaContext;
 use Illuminate\Support\Facades\DB;
-use App\Exceptions\CustomException;
 use Illuminate\Support\Facades\Log;
 
 class InfAjustesHandler
 {
-    public function actualizarDesdeWMS(OrdenEntradaContext $context)
+    /**
+     * Actualiza las cantidades de inventario desde WMS.
+     *
+     * @param OrdenEntradaContext $context
+     * @return array
+     */
+    public function actualizarDesdeWMS(OrdenEntradaContext $context): array
     {
         DB::beginTransaction();
 
         try {
-            // Variables para almacenar las cantidades de gui_canord asociadas a cada ord_produc
-            $ordProducCantidad = [];
+            $cantidadesPorProducto = $this->procesarDetallesSolicitud($context);
 
-            // Iterar sobre los detalles de la solicitud de recepción
-            $context->guiaRecepcion->iterarDetalle(function ($detalleSolicitud) use ($context, &$ordProducCantidad) {
-                // Obtener la cantidad de gui_canord para este detalle de solicitud
-                $cantidad = $detalleSolicitud->gui_canord;
-                // Obtener el ord_produc correspondiente al gui_produc
-                $ordProduc = $detalleSolicitud->gui_produc;
-
-                // Sumar la cantidad al arreglo de cantidades asociadas al ord_produc
-                if (!isset($ordProducCantidad[$ordProduc])) {
-                    $ordProducCantidad[$ordProduc] = 0;
-                }
-                $ordProducCantidad[$ordProduc] += $cantidad;
-            });
-
-            // Iterar sobre los detalles de la orden de compra y actualizar ord_saldos si hay coincidencia con ord_produc y gui_produc
-            $context->ordenCompra->iterarDetalle(function ($detalle) use ($context, $ordProducCantidad) {
-                // Verificar si ord_produc está presente en las cantidades asociadas a gui_produc
-                if (isset($ordProducCantidad[$detalle->ord_produc])) {
-                    // Obtener la cantidad correspondiente
-                    $cantidad = $ordProducCantidad[$detalle->ord_produc];
-
-                    // Crear los criterios de búsqueda
-                    $criteriosBusqueda = [
-                        'ord_numcom' => $detalle->ord_numcom,
-                        'ord_produc' => $detalle->ord_produc
-                    ];
-
-                    // Actualizar ord_saldos sumando la cantidad correspondiente
-                    $context->ordenCompra->guardarDetalle(
-                        function ($detalleCompra) use ($cantidad) {
-                            $detalleCompra->ord_saldos += $cantidad;
-                        },
-                        $criteriosBusqueda
-                    );
-                }
-            });
+            $this->actualizarOrdenCompra($context, $cantidadesPorProducto);
 
             DB::commit();
 
             return ['success' => true, 'message' => 'Inventario actualizado correctamente'];
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error al actualizar desde WMS:', ['error_message' => $e->getMessage()]);
-            Log::error('Error al actualizar desde WMS:', ['stack_trace' => $e->getTrace()]);
+            Log::error('Error al actualizar desde WMS', [
+                'error_message' => $e->getMessage(),
+                'stack_trace' => $e->getTraceAsString(),
+            ]);
             return ['success' => false, 'message' => $e->getMessage()];
         }
+    }
+
+    /**
+     * Procesa los detalles de la solicitud de recepción y agrupa cantidades por producto.
+     *
+     * @param OrdenEntradaContext $context
+     * @return array
+     */
+    private function procesarDetallesSolicitud(OrdenEntradaContext $context): array
+    {
+        $cantidadesPorProducto = [];
+
+        $context->guiaRecepcion->iterarDetalle(function ($detalleSolicitud) use (&$cantidadesPorProducto) {
+            $producto = $detalleSolicitud->gui_produc;
+            $cantidad = $detalleSolicitud->gui_canord;
+
+            // Agrupar cantidades por producto
+            $cantidadesPorProducto[$producto] = ($cantidadesPorProducto[$producto] ?? 0) + $cantidad;
+        });
+
+        Log::info('Cantidades procesadas desde la solicitud', $cantidadesPorProducto);
+
+        return $cantidadesPorProducto;
+    }
+
+    /**
+     * Actualiza los detalles de la orden de compra con base en las cantidades procesadas.
+     *
+     * @param OrdenEntradaContext $context
+     * @param array $cantidadesPorProducto
+     */
+    private function actualizarOrdenCompra(OrdenEntradaContext $context, array $cantidadesPorProducto): void
+    {
+        $context->ordenCompra->iterarDetalle(function ($detalleOrden) use ($context, $cantidadesPorProducto) {
+            $producto = $detalleOrden->ord_produc;
+
+            if (isset($cantidadesPorProducto[$producto])) {
+                $cantidad = $cantidadesPorProducto[$producto];
+
+                $criteriosBusqueda = [
+                    'ord_numcom' => $detalleOrden->ord_numcom,
+                    'ord_produc' => $producto
+                ];
+
+                $context->ordenCompra->guardarDetalle(
+                    function ($detalleCompra) use ($cantidad) {
+                        $detalleCompra->ord_saldos += $cantidad;
+                    },
+                    $criteriosBusqueda
+                );
+
+                Log::info('Orden de compra actualizada', [
+                    'producto' => $producto,
+                    'cantidad_sumada' => $cantidad,
+                    'nuevo_saldo' => $detalleOrden->ord_saldos + $cantidad
+                ]);
+            }
+        });
     }
 }
