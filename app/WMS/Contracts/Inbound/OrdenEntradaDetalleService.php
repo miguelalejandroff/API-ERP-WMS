@@ -5,6 +5,8 @@ namespace App\WMS\Contracts\Inbound;
 use Illuminate\Http\JsonResponse;
 use stdClass;
 use App\WMS\Build\AbstractBase;
+use Illuminate\Support\Facades\Log;
+
 
 abstract class OrdenEntradaDetalleService extends AbstractBase
 {
@@ -60,7 +62,7 @@ abstract class OrdenEntradaDetalleService extends AbstractBase
     /**
      * Cantidad original solicitada
      */
-    public function cantidadSolicitada($model): ?int
+    public function cantidadSolicitada($model): ?float
     {
         return null;
     }
@@ -68,6 +70,14 @@ abstract class OrdenEntradaDetalleService extends AbstractBase
     public function getJson(): JsonResponse
     {
         $ordenEntradaDetalle = parent::get();
+
+        Log::info('Enviando datos a WMS: ' . json_encode([
+            'codOwner' => parent::codOwner(),
+            'ordenEntradaDetalle' => [
+                $ordenEntradaDetalle
+            ]
+        ]));
+
         return response()->json([
             'codOwner' => parent::codOwner(),
             'ordenEntradaDetalle' => [

@@ -41,7 +41,29 @@ class cmguias extends Model
 
     public function cmdetgui()
     {
-        return $this->hasMany(cmdetgui::class, 'gui_numero', 'gui_numero');
+        return $this->hasMany(cmdetgui::class, 'gui_numero', 'gui_numero')
+                    ->where('gui_tipgui', $this->gui_tipgui); // Filtrar por gui_tipgui del modelo actual
+    }
+    
+
+    public function bodegaOrigen()
+    {
+        return $this->hasOne(cmbodega::class, 'bod_codsuc', 'gui_sucori'); 
+    }
+
+    public function bodegaDestino()
+    {
+        return $this->hasOne(cmbodega::class, 'bod_codsuc', 'gui_sucdes');
+    }
+
+    public function folioguia()
+    {
+        return $this->hasOne(despachodetalle::class, 'des_numgui', 'gui_numero'); 
+    }
+
+    public function folioPedido()
+    {
+        return $this->hasOne(pedidosdetalles::class, 'ped_numgui', 'gui_numero'); 
     }
 
     /**

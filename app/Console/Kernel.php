@@ -23,6 +23,8 @@ class Kernel extends ConsoleKernel
         
         // $schedule->command('actualizar:maestro-rubros')->dailyAt('7:00');
         //$schedule->job(new DeveloperJob)->everyMinute();
+
+        $schedule->command('stock:confirmar');
     }
 
     /**

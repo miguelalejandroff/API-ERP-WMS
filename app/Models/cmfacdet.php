@@ -19,6 +19,19 @@ class cmfacdet extends Model
 
     public $timestamps = false;
 
+    protected $fillable = [
+        "fac_nrodoc",
+        "fac_tipdoc",
+        "fac_bodori",
+        "fac_codpro",
+        "fac_descri",
+        "fac_unimed",
+        "fac_cantid",
+        "fac_preuni",
+        "fac_descue",
+        "fac_saldos"
+    ];
+
     public function cmproductos()
     {
         return $this->hasOne(cmproductos::class, 'pro_codigo', 'fac_codpro')->where('pro_anomes', now()->format('Ym'));

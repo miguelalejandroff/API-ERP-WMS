@@ -3,11 +3,13 @@
 use App\ERP\Adapters\OrdenEntrada\OrdenCompraRecepcion;
 use App\ERP\EndpointERP;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\WMSController;
 
 use App\Http\Controllers\developer;
 use App\Http\Controllers\Logs\Log;
 use App\Http\Controllers\Test;
 use App\Http\Controllers\TrackingController;
+use App\Http\Controllers\InventarioController;
 use App\Libs\GuiaCompra;
 use App\Libs\GuiaRecepcion;
 use App\Libs\WMS;
@@ -52,6 +54,10 @@ Route::prefix('WMS')->middleware('tokenWMS', 'LogRequest')->group(function () {
 
     Route::post('CreateOrdenSalida', [EndpointWMS::class, 'createOrdenSalida']);
 
+    Route::post('CreateOrdenSalidaDocumentoFiscal', [EndpointWMS::class, 'createOrdenSalidaDocumentoFiscal']);
+
+    Route::post('CreateOrdenSalidaCambioEstado', [EndpointWMS::class, 'createOrdenSalidaCambioEstado']);
+
     Route::post('CreateOrdenEntradaCambioEstado', function (Request $request) {
         return response()->json($request, 200, []);
     });
@@ -65,21 +71,37 @@ Route::prefix('ERP')->middleware('tokenWMS', 'LogRequest')->group(function () {
 
     Route::post('ConfirmarOrdenEntrada2', [EndpointERP::class, 'confirmarOrdenEntrada2']);
 
-    Route::post('GetTraspasoEntreBodegaInterna', [EndpointERP::class, 'GetTraspasoEntreBodegaInterna']);
+    Route::post('ConfirmarTraspasoBodega', [EndpointERP::class, 'confirmarTraspasoBodega']);
 
-    Route::post('GetAjustesInventario', [EndpointERP::class, 'GetAjustesInventario']);
+    Route::post('ConfirmarAjustePositivo', [EndpointERP::class, 'confirmarAjustePositivo']);
+
+    Route::post('ConfirmarAjusteNegativo', [EndpointERP::class, 'confirmarAjusteNegativo']);
+
+    Route::post('ConfirmarInventario', [EndpointERP::class, 'confirmarInventario']);
 
     Route::post('ConfirmarOrdenSalida', [EndpointERP::class, 'confirmarOrdenSalida']);
+
+    Route::post('ConfirmarCancelarDocumento', [EndpointERP::class, 'confirmarCancelarDocumento']);
+
+    Route::get('StockDisponible', [WMSController::class, 'getStockDisponible']);
+
+
+
 });
+
+
 
 
 /**
  * Grupo de rutas para desarrollar en la base 157
  */
-Route::prefix('dev')->middleware('tokenWMS')->group(function () {
+Route::prefix('dev')->group(function () {
     //Route::get('pdf',[''])
     Route::get('developer', [developer::class, 'dev'])->name('developer');
     Route::post('guiaCompra', [GuiaCompra::class, '__construct'])->name('guiaCompra');
     Route::post('guiaRecepcion', [GuiaRecepcion::class, '__construct'])->name('guiaRecepcion');
     Route::post('OrdenCompraRecepcion', [OrdenCompraRecepcion::class, '__construct']);
+    Route::get('info', function () {
+        phpinfo();
+    })->name('developer');
 });

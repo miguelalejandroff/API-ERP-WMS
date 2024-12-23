@@ -3,6 +3,8 @@
 namespace App\ERP\Providers;
 
 use App\ERP\Adapters\OrdenEntrada\SolicitudRecepcion;
+use App\ERP\Adapters\OrdenEntrada\DespachoTransito;
+use App\ERP\Context\OrdenEntradaContext;
 use App\ERP\Contracts\OrdenEntradaService;
 use App\ERP\Enum\OrdenStatus;
 use App\ERP\Enum\TipoDocumentoERP;
@@ -13,6 +15,8 @@ use App\Models\wmscmguias;
 use Carbon\Carbon;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\DeleteDespachoEnTransito;
+use Illuminate\Support\Facades\DB;
 
 class OrdenEntradaServiceProvider extends ServiceProvider
 {
@@ -23,88 +27,52 @@ class OrdenEntradaServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        /**
-         * Vincula la interfaz OrdenEntradaService a una función anónima que resuelve la implementación.
-         */
         $this->app->bind(OrdenEntradaService::class, function ($app) {
-
-            /**
-             * Crea un objeto de contexto para mantener los datos relevantes.
-             */
-            $context = (object)[
-                'trackingId' => uniqid(),
-                'recepcion' => (object)$app->request->all()
-            ];
-
-
-            Log::info('Request Logged:', [
-                'context' => $context,
+            Log::info('OrdenEntradaService context created:', [
+                'request_data' => $app->request->all()
             ]);
 
-            $context->recepcion->fechaRecepcionWMS = Carbon::parse($context->recepcion->fechaRecepcionWMS);
-            $context->recepcion->documentoDetalle = collect($context->recepcion->documentoDetalle);
-            /**
-             * Maneja diferentes tipos de documentos.
-             */
-            switch ($context->recepcion->tipoDocumentoERP) {
+            $context = new OrdenEntradaContext($app->request->all()); 
+    
+            switch ($context->recepcionWms->getDocumento('tipoDocumentoERP')) {
                 case TipoDocumentoERP::SOLICITUD_RECEPCION->value:
-                    /**
-                     * Busca la solicitud de recepción basándose en el número de documento.
-                     */
-                    $context->solicitudRecepcion = wmscmguias::solicitudesPromo($context->recepcion->numeroDocumento);
-                    /**
-                     * Lanza una excepción si la solicitud de recepción no existe.
-                     */
-                    if (!$context->solicitudRecepcion) {
-                        throw new CustomException("Solicitud de Recepcion no Existe: {$context->recepcion->numeroDocumento}", [], 500);
-                    }
 
-                    /**
-                     * Busca la orden de compra.
-                     */
-                    $context->ordenCompra = cmordcom::Orden($context->solicitudRecepcion->gui_ordcom);
-
-                    /**
-                     * Lanza una excepción si la orden de compra no existe.
-                     */
-                    if (!$context->ordenCompra) {
-                        throw new CustomException("Orden de Compra no Existe: {$context->solicitudRecepcion->gui_ordcom}", [], 500);
-                    }
-
-                    /**
-                     * Maneja diferentes estados de la orden de compra.
-                     */
-                    switch ($context->ordenCompra->ord_estado) {
+                    switch ($context->ordenCompra->getDocumento('ord_estado')) {
                         case OrdenStatus::ANULADA->value:
-                            throw new CustomException("Orden de Compra Anulada: {$context->ordenCompra->ord_numcom}", [], 500);
+                            throw new CustomException("Orden de Compra Anulada: {$context->ordenCompra->getDocumento('ord_numcom')}", [], 500);
                         case OrdenStatus::CERRADA->value:
-                            throw new CustomException("Orden de Compra Cerrada: {$context->ordenCompra->ord_numcom}", [], 500);
+                            throw new CustomException("Orden de Compra Cerrada: {$context->ordenCompra->getDocumento('ord_numcom')}", [], 500);
                         case OrdenStatus::PENDIENTE->value or OrdenStatus::RECIBIDA->value:
-                            /**
-                             * Si existe una orden de compra bonificada, la busca.
-                             */
-                            if ($context->ordenCompra->cmenlbon?->bon_ordbon) {
-                                $context->ordenCompraBonificada = cmordcom::Orden($context->ordenCompra->cmenlbon->bon_ordbon);
-                            }
-
-                            /**
-                             * Busca el proveedor.
-                             */
-                            $context->proveedor = cmclientes::Cliente($context->solicitudRecepcion->gui_subcta);
-
-                            /**
-                             * Ejecuta la solicitud de recepción.
-                             */
+            
+                            $context->cargarDatosSolicitudRecepcion();
+                
                             return new SolicitudRecepcion($context);
-                    }
 
-                    //case TipoDocumentoERP::SOLICITUD_DESPACHO->value:
-                    //    return new SolicitudRecepcion($context);
+                            break;
+                    }
+                
+
+    
+                case TipoDocumentoERP::GUIA_DEVOLUCION->value:
+                case TipoDocumentoERP::GUIA_DESPACHO->value:
+                case TipoDocumentoERP::TRASPASO_SUCURSAL->value:
+                    // Agrega la lógica para el caso de GUIA_DEVOLUCION aquí
+                    $context->guiaRecepcion = (object) $app->request->all();
+        
+                    Log::info('Request Logged:', [
+                        'context' => $context,
+                    ]);
+                    return new DespachoTransito($context);
+    
                 default:
-                    return throw new CustomException("El tipo de Documento: '{$context->recepcion->tipoDocumentoERP}' no coincide con ninguna categoría válida en el sistema.", [], 500);
+                    throw new CustomException("El tipo de Documento: '{$context->recepcionWms->getDocumento('tipoDocumentoERP')}' no coincide con ninguna categoría válida en el sistema.", [], 500);
             }
         });
     }
+    
+
+
+    
     /**
      * Bootstrap services.
      *
@@ -114,4 +82,5 @@ class OrdenEntradaServiceProvider extends ServiceProvider
     {
         //
     }
+
 }

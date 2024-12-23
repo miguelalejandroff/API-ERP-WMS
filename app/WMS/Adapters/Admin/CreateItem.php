@@ -35,7 +35,7 @@ class CreateItem extends ItemService
 
     public function controlaSerie($model): string
     {
-        return $model->enlacewms?->controlserie ?? parent::controlaSerie($model);
+        return "N";
     }
 
     public function controlaExpiracion($model): string
@@ -55,12 +55,58 @@ class CreateItem extends ItemService
 
     public function controlaCantidad($model): string
     {
-        return $model->enlacewms?->controlcantid ?? parent::controlaCantidad($model);
+        return "S";
+    }
+
+    public function codUnidadMedida($model) : int
+    {
+        switch ($model->pro_unimed) { 
+            case 'UN':
+                return 1;
+            case 'CJ':
+                return 3;
+            case 'BO':
+                return 16;
+            case 'FR':
+                return 17;
+            case 'LA':
+                return 18;
+            case 'SC':
+                return 19;
+            case 'SO':
+                return 20;
+            case 'TA':
+                return 21;
+            case 'KG':
+                return 22;
+            case 'MT':
+                return 23;
+            case 'PK':
+                return 24;
+            case 'PA':
+                return 25;
+            case 'RO':
+                return 26;
+            case 'BT':
+                return 27;
+            case 'TA':
+                return 28;
+            case 'TO':
+                return 29;
+            case 'M2':
+                return 30;
+            case 'BA':
+                return 31;
+            case 'BI':
+                return 32;
+            default:
+                return 1;
+        }
     }
 
     public function codTipo($model): string
     {
-        return $model->enlacewms?->codtipo ?? parent::codTipo($model);
+        return 1;
     }
 
     public function marca($model): ?string
@@ -75,7 +121,7 @@ class CreateItem extends ItemService
 
     public function esPickeable($model): string
     {
-        return $model->enlacewms?->espickeable ?? parent::esPickeable($model);
+        return "S";
     }
 
     public function inspeccion($model): string

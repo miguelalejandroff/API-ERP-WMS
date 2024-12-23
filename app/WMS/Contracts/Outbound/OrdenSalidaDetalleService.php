@@ -61,7 +61,7 @@ abstract class OrdenSalidaDetalleService extends AbstractBase
     /**
      * Codigo de Item (SKU)
      */
-    public function cantidad($model): ?int
+    public function cantidad($model): ?float
     {
         return null;
     }

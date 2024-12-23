@@ -3,12 +3,20 @@
 namespace App\ERP\Handler;
 
 use App\ERP\Build\Handler;
+use App\ERP\Context\OrdenEntradaContext;
 use App\Exceptions\CustomException;
 use App\Models\guicompra;
 use App\Models\guidetcompra;
 use App\WMS\Contracts\Inbound\OrdenEntradaService;
 use App\WMS\EndpointWMS;
 use Exception;
+use Illuminate\Support\Facades\Log;
+use App\Models\cmdetord;
+use App\Models\cmordcom;
+use App\Models\cmproductos;
+use App\ERP\Handler\MaestroProductoHandler;
+use Illuminate\Support\Facades\Http;
+use Psy\Readline\Hoa\Console;
 
 /**
  * Clase GuiaCompraHandler
@@ -18,11 +26,6 @@ use Exception;
  */
 class GuiaCompraHandler extends Handler
 {
-
-    /**
-     * @var string $tipoGuia define el tipo de guía de compra. Por defecto es "07".
-     */
-    private $tipoGuia = "07";
 
     /**
      * @var string $bodegaOrigen define el ID de la bodega de origen. Por defecto es 0.
@@ -44,234 +47,172 @@ class GuiaCompraHandler extends Handler
      */
     private $sucursalDestino = 1;
 
-    /**
-     * @var string $parametro define un parámetro de defecto. Por defecto es "N".
-     */
-    private $parametro = "N";
-
-    /**
-     * @var string $empresa define el ID de la empresa. Por defecto es 1.
-     */
-    private $empresa = 1;
-
-    /**
-     * @var string $ordenCompra define la orden de compra.
-     */
-    private $ordenCompra;
-
-    /**
-     * @var string $solicitudRecepcion  define la solicitud de recepción creada por el ERP.
-     */
-    private $solicitudRecepcion;
-
-    /**
-     * @var string $recepcion define la recepción creada por el WMS.
-     */
-    private $recepcion;
-
-    /**
-     * @var string $proveedor define el proveedor.
-     */
-    private $proveedor;
-
-    /**
-     * Maneja la creación de la guía de compra.
-     *
-     * @param object $context Contiene la orden de compra, la solicitud de recepción, la recepción y el proveedor.
-     * @throws GuiaCompraException Si hay un error en el proceso de creación de la guía.
-     */
-    public function handle($context)
+    
+    public function handle(OrdenEntradaContext $context)
     {
+        Log::info('GuiaCompraHandler', ['message' => 'Inicia Proceso']);
 
-        try {
-            $ordenCompra = $context->ordenCompra;
+        $context->guiaCompra->cargarDocumento($context->ordenCompra->getDocumento('ord_numcom'));
+        $context->guiaCompra->enviaWms = true;
 
-            $solicitudRecepcion = $context->solicitudRecepcion;
+        if (!$context->guiaCompra->getDocumento()) {
 
-            $recepcion = $context->recepcion;
+            Log::info('GuiaCompraHandler', ['message' => 'No existe Guia de Compra', 'guiaCompra' => $context->guiaCompra->getDocumento()]);
+            $context->guiaCompra->guardarDocumento(function ($documento) use ($context) {
 
-            $proveedor = $context->proveedor;
+                $documento->gui_numero = $context->ordenCompra->getDocumento('ord_numcom');
+                $documento->gui_tipgui = $context->guiaCompra->tipoDocumento;
+                $documento->gui_fechag = $context->recepcionWms->getDocumento('fechaRecepcionWMS')->format('Y-m-d');
+                $documento->gui_ordcom = $context->ordenCompra->getDocumento('ord_numcom');
 
-            $guiaCompra = guicompra::where('gui_ordcom', $ordenCompra->ord_numcom)->where('gui_tipgui', $this->tipoGuia)->first();
+                $documento->gui_numrut = $context->proveedor->getDocumento('aux_numrut');
+                $documento->gui_digrut = $context->proveedor->getDocumento('aux_digrut');
+                $documento->gui_subcta = $context->proveedor->getDocumento('aux_claves');
+                $documento->gui_nombre = $context->proveedor->getDocumento('aux_nombre');
 
-            if (!$guiaCompra) {
+                $documento->gui_guipro = $context->solicitudRecepcion->getDocumento('gui_guipro') ?? 0;
+                $documento->gui_facpro = $context->solicitudRecepcion->getDocumento('gui_facpro') ?? 0;
+                $documento->gui_facals = $context->solicitudRecepcion->getDocumento('gui_facals') ?? 0;
 
-                $encabezado =  $this->insertEncabezado($solicitudRecepcion, $recepcion, $ordenCompra, $proveedor);
+                $documento->gui_sucori = $this->sucursalOrigen;
+                $documento->gui_sucdes = $this->sucursalDestino;
 
-                foreach ($ordenCompra->cmdetord as &$row) {
+                $documento->gui_paract = $context->parametro;
+                $documento->gui_fecmod = $context->recepcionWms->getDocumento('fechaRecepcionWMS')->format('Y-m-d');
+                $documento->gui_codusu = $context->solicitudRecepcion->getDocumento('gui_codusu');
+                $documento->gui_empres = $context->empresa;
 
-                    $detalle = $this->insertDetalle($encabezado->gui_clave, $row);
+                $documento->gui_current = $context->recepcionWms->getDocumento('fechaRecepcionWMS')->format('Y-m-d H:i');
+            });
 
-                    $productoRecepcion = $this->findProductInReceptionDetails($recepcion->documentoDetalle, $detalle);
+            $context->ordenCompra->iterarDetalle(function ($detalle) use ($context) {
 
-                    $cantidadRecepcionada = $productoRecepcion->cantidadRecepcionada ?? 0;
+                $context->guiaCompra->guardarDetalle(function ($detalleCompra) use ($context, $detalle) {
 
-                    (new MaestroProducto)->updated(
-                        $detalle->gui_produc,
-                        $detalle->gui_preuni,
-                        $detalle->gui_canord,
-                        $encabezado->gui_fechag,
-                        $detalle->gui_numero,
-                        $cantidadRecepcionada
-                    );
-                }
-                $this->enviaGuiaCompraWMS($encabezado->gui_numero);
+                    $detalleCompra->gui_clave = $context->guiaCompra->getDocumento('gui_clave');
+                    $detalleCompra->gui_numero = $detalle->ord_numcom;
+                    $detalleCompra->gui_tipgui = $context->guiaCompra->tipoDocumento;
+
+                    $detalleCompra->gui_bodori = $this->bodegaOrigen;
+                    $detalleCompra->gui_boddes = $this->bodegaDestino;
+
+                    $detalleCompra->gui_produc = $detalle->ord_produc;
+                    $detalleCompra->gui_descri = $detalle->ord_descri;
+                    $detalleCompra->gui_unimed = $detalle->ord_unimed;
+
+                    $detalleCompra->gui_canord = $detalle->calculaCosto->cantidadCalculada;
+                    $detalleCompra->gui_canrep = $detalle->calculaCosto->cantidadCalculada;
+                    $detalleCompra->gui_preuni = $detalle->calculaCosto->precioCalculado;
+                    $detalleCompra->gui_saldo = $detalle->calculaCosto->cantidadCalculada;
+                });
+            });
+
+            $context->guiaCompra->cargarDocumento($context->guiaCompra->getDocumento('gui_numero'));
+
+            $context->guiaCompra->enviaWms = true;
+
+            Log::info('GuiaCompraHandler', ['message' => 'Se crea Documento para Guia de Compra', 'guiaCompra' => $context->guiaCompra->getDocumento()]);
+
+            $saldoBodegaTransitoHandler = new SaldoBodegaTransitoHandler();
+            $saldoBodegaTransitoHandler->handle($context);
+
+        }
+
+        Log::info('GuiaCompraHandler', ['message' => 'Inicia Actualizacion de Saldo Guia de Compra', 'guiaCompra' => $context->guiaCompra->getDocumento()]);
+
+        $context->guiaCompra->iterarDetalle(function ($detalle) use ($context) {
+
+
+            $recepcionWms = $context->recepcionWms->getDetalle('codigoProducto', $detalle->gui_produc);
+
+            if ($recepcionWms) {
+
+                $criteriosBusqueda = [
+                    'gui_numero' => $detalle->gui_numero,
+                    'gui_tipgui' => $detalle->gui_tipgui,
+                    'gui_produc' => $detalle->gui_produc
+                ];
+
+                $context->guiaCompra->guardarDetalle(
+                    function ($detalleCompra) use ($recepcionWms) {
+                        $detalleCompra->gui_saldo -= $recepcionWms['cantidadRecepcionada'];
+                    },
+                    $criteriosBusqueda
+                );
+
             }
-            foreach ($recepcion->documentoDetalle as $row) {
-                $this->updateDetalle($ordenCompra->ord_numcom, $row['codigoProducto'], $row['cantidadRecepcionada']);
+        });
+
+        
+        // Variables para almacenar los gui_produc y gui_canord asociados a los gui_produc que no están presentes en la recepción WMS
+        $guiProducNoPresentes = [];
+        $guiCanrepNoPresentes = [];
+
+        // Iterar sobre los detalles de la solicitud de recepción
+        $context->solicitudRecepcion->iterarDetalle(function ($detalleSolicitud) use ($context, &$guiProducNoPresentes, &$guiCanrepNoPresentes) {
+
+            // Verificar si el gui_produc actual no está presente en la recepción WMS
+            $recepcionWms = $context->recepcionWms->getDetalle('codigoProducto', $detalleSolicitud->gui_produc);
+            if (!$recepcionWms) {
+                // Si no está presente, almacenar gui_produc y gui_canord asociados a ese gui_produc en las variables respectivas
+                $guiProducNoPresentes[] = $detalleSolicitud->gui_produc;
+                $guiCanrepNoPresentes[] = $detalleSolicitud->gui_canrep;
             }
-        } catch (Exception $e) {
-            $exception = new CustomException("Error al crear la Guia de Compra: {$ordenCompra->ord_numcom}", [
-                'message' => $e->getMessage(),
-                'code' => $e->getCode()
-            ], 500);
-
-            $exception->saveToDatabase(); // Asumiendo que tienes este método en tu clase CustomException
-
-            throw $exception;
-        }
-    }
-
-    /**
-     * Encuentra un producto en los detalles de la recepción de mercancía.
-     *
-     * @param Collection $recepcionDetalle Detalles de la recepción de la mercancía.
-     * @param object $detalle Detalle de la guía de compra.
-     * @return object El producto buscado, o null si no se encuentra.
-     */
-    protected function findProductInReceptionDetails($recepcionDetalle, $detalle)
-    {
-        return $recepcionDetalle->filter(function ($item) use ($detalle) {
-            return $item['codigoProducto'] == $detalle->gui_produc;
-        })->first();
-    }
-
-    /**
-     * Inserta el encabezado de la guía de compra en la base de datos.
-     *
-     * @param object $solicitudRecepcion Solicitud de recepción creada por el ERP.
-     * @param object $recepcion Recepción creada por el WMS.
-     * @param object $ordenCompra Orden de compra.
-     * @param object $proveedor Proveedor.
-     * @return object Encabezado de la guía de compra insertado en la base de datos.
-     * @throws CustomException Si hay un error al insertar el encabezado.
-     */
-    public function insertEncabezado($solicitudRecepcion, $recepcion, $ordenCompra, $proveedor)
-    {
-
-        try {
-
-            $guiaCompra = new guicompra;
-
-            $guiaCompra->gui_numero = $ordenCompra->ord_numcom;
-            $guiaCompra->gui_tipgui = $this->tipoGuia;
-            $guiaCompra->gui_fechag = $recepcion->fechaRecepcionWMS->format('Y-m-d');
-            $guiaCompra->gui_ordcom = $ordenCompra->ord_numcom;
-
-            $guiaCompra->gui_numrut = $proveedor->aux_numrut;
-            $guiaCompra->gui_digrut = $proveedor->aux_digrut;
-            $guiaCompra->gui_subcta = $proveedor->aux_claves;
-            $guiaCompra->gui_nombre = $proveedor->aux_nombre;
-
-            $guiaCompra->gui_guipro = $solicitudRecepcion->gui_guipro ?? 0;
-            $guiaCompra->gui_facpro = $solicitudRecepcion->gui_facpro ?? 0;
-            $guiaCompra->gui_facals = $solicitudRecepcion->gui_facals ?? 0;
-
-            $guiaCompra->gui_sucori = $this->sucursalOrigen;
-            $guiaCompra->gui_sucdes = $this->sucursalDestino;
-
-            $guiaCompra->gui_paract = $this->parametro;
-            $guiaCompra->gui_fecmod = $recepcion->fechaRecepcionWMS->format('Y-m-d');
-            $guiaCompra->gui_codusu = $solicitudRecepcion->gui_codusu;
-            $guiaCompra->gui_empres = $this->empresa;
-
-            $guiaCompra->gui_current = $recepcion->fechaRecepcionWMS->format('Y-m-d H:i');
-
-            $guiaCompra->saveOrFail();
-
-            return $guiaCompra;
-        } catch (Exception $e) {
-            $exception = new CustomException("Error al Insertar el Encabezado de la Guia de Compra: {$guiaCompra->gui_numero}", [
-                'message' => $e->getMessage(),
-                'code' => $e->getCode()
-            ], 500);
-
-            $exception->saveToDatabase(); // Asumiendo que tienes este método en tu clase CustomException
-
-            throw $exception;
-        }
-    }
+        });
 
 
-    /**
-     * Inserta un detalle de la guía de compra en la base de datos.
-     *
-     * @param int $id Identificador de la guía de compra.
-     * @param object $row Fila de la orden de compra.
-     * @return object Detalle de la guía de compra insertado en la base de datos.
-     * @throws CustomException Si hay un error al insertar el detalle.
-     */
-    public function insertDetalle($id,  $row)
-    {
-        try {
+        // Iterar sobre los detalles de la orden de compra
+        $context->ordenCompra->iterarDetalle(function ($detalle) use ($context, &$guiProducNoPresentes, &$guiCanrepNoPresentes) {
 
-            $detalleCompra = new guidetcompra();
+            $recepcionordWms = $context->recepcionWms->getDetalle('codigoProducto', $detalle->ord_produc);
 
-            $detalleCompra->gui_clave = $id;
-            $detalleCompra->gui_numero = $row->ord_numcom;
-            $detalleCompra->gui_tipgui = $this->tipoGuia;
+            $criteriosBusqueda = [
+                'ord_numcom' => $detalle->ord_numcom,
+    
+                'ord_produc' => $detalle->ord_produc
+            ];
 
-            $detalleCompra->gui_bodori = $this->bodegaOrigen;
-            $detalleCompra->gui_boddes = $this->bodegaDestino;
+            if ($recepcionordWms && $recepcionordWms['cantidadSolicitada'] !== $recepcionordWms['cantidadRecepcionada']) {
 
-            $detalleCompra->gui_produc = $row->ord_produc;
-            $detalleCompra->gui_descri = $row->ord_descri;
-            $detalleCompra->gui_unimed = $row->ord_unimed;
+                $diferencia = $recepcionordWms['cantidadSolicitada'] - $recepcionordWms['cantidadRecepcionada'];
 
-            $detalleCompra->gui_canord = $row->calculaCosto->cantidadCalculada;
-            $detalleCompra->gui_canrep = $row->calculaCosto->cantidadCalculada;
-            $detalleCompra->gui_preuni = $row->calculaCosto->precioCalculado;
-            $detalleCompra->gui_saldo = $row->calculaCosto->cantidadCalculada;
+                $context->ordenCompra->guardarDetalle(
+                    function ($detalleCompra) use ($diferencia) {
+                        $detalleCompra->ord_saldos += $diferencia;
+                    },
+                    $criteriosBusqueda
+                );
+                $context->ordenCompra->guardarDocumento(
+                    function ($documento){
+                        $documento->ord_estado = 'P';
+                    },
+                    $criteriosBusqueda
+                );
+                        
+                
+            }
+            if (in_array($detalle->ord_produc, $guiProducNoPresentes)) {
+                // Obtener la cantidad correspondiente desde $guiCanrepNoPresentes asociado al gui_produc actual
+                $cantidad = $guiCanrepNoPresentes[array_search($detalle->ord_produc, $guiProducNoPresentes)];
+                
+                $context->ordenCompra->guardarDetalle(
+                    function ($detalleCompra) use ($cantidad) {
+                        $detalleCompra->ord_saldos += $cantidad;
+                    },
+                    $criteriosBusqueda
+                );
+                $context->ordenCompra->guardarDocumento(
+                    function ($documento){
+                        $documento->ord_estado = 'P';
+                    },
+                    $criteriosBusqueda
+                );
+            }            
+        });
+        
+        Log::info('GuiaCompraHandler', ['message' => 'Finaliza Actualizacion de Saldo Guia de Compra', 'guiaCompra' => $context->guiaCompra->getDocumento()]);
 
-            $detalleCompra->saveOrFail();
-
-            return $detalleCompra;
-        } catch (Exception $e) {
-            $exception = new CustomException("Error al Insertar el Detalle de la Guia de Compra: {$detalleCompra->gui_numero}", [
-                'message' => $e->getMessage(),
-                'code' => $e->getCode()
-            ], 500);
-
-            $exception->saveToDatabase(); // Asumiendo que tienes este método en tu clase CustomException
-
-            throw $exception;
-        }
-    }
-
-    /**
-     * Actualiza el detalle de la guía de compra, incrementando la cantidad del saldo.
-     *
-     * @param int $numeroOrden Identificador de la guía de compra.
-     * @param string $codigoProducto Código del producto.
-     * @param int $cantidadRecepcionada Cantidad recepcionada del producto.
-     */
-    protected function updateDetalle($numeroOrden, $codigoProducto, $cantidadRecepcionada)
-    {
-        try {
-            guidetcompra::where('gui_numero', $numeroOrden)
-                ->where('gui_tipgui', $this->tipoGuia)
-                ->where('gui_produc', $codigoProducto)
-                ->decrement('gui_saldo', $cantidadRecepcionada);
-        } catch (Exception $e) {
-            $exception = new CustomException("Error al Actualizar la Guia de Compra: {$numeroOrden}", [
-                'message' => $e->getMessage(),
-                'code' => $e->getCode()
-            ], 500);
-
-            $exception->saveToDatabase(); // Asumiendo que tienes este método en tu clase CustomException
-
-            throw $exception;
-        }
+        Log::info('GuiaCompraHandler', ['message' => 'Finaliza Proceso']);
     }
 
     /**
@@ -279,36 +220,20 @@ class GuiaCompraHandler extends Handler
      *
      * @param string $guiaCompra Número de la guía de compra.
      * @return mixed Respuesta del WMS.
-     * 
      * @throws GuiaCompraException Si hay un error al enviar la guía de compra.
      */
-    public function enviaGuiaCompraWMS($guiaCompra)
+    public function enviaGuiaCompraWMS($context)
     {
-
         try {
-            // Aquí debes asegurarte de que app()->request tenga los datos necesarios
-            // Puedes hacer algo como esto:
-            app()->request->merge(['guiaCompra' => $guiaCompra]);
 
-            // Obten la instancia de OrdenEntradaService a través del contenedor de servicios
-            $orden = app(OrdenEntradaService::class);
+            $guiaCompra = $context->guiaCompra->getDocumento('gui_numero');
 
-            // Crea una instancia del controlador de orden
-            $ordenController = app(EndpointWMS::class);
+            $url = url('/WMS/CreateOrdenEntrada');
 
-            // Ahora puedes usar $orden en el método createOrdenEntrada
-            $response = $ordenController->createOrdenEntrada($orden);
-
-            return $response;
+            Http::post($url, ['guiaCompra' => $guiaCompra]);
         } catch (Exception $e) {
-            $exception = new CustomException("Error al Enviar la Guia de Compra al WMS", [
-                'message' => $e->getMessage(),
-                'code' => $e->getCode()
-            ], 500);
 
-            $exception->saveToDatabase(); // Asumiendo que tienes este método en tu clase CustomException
-
-            throw $exception;
+            Log::error('Error al obtener la ruta: ' . $e->getMessage());
         }
     }
 }

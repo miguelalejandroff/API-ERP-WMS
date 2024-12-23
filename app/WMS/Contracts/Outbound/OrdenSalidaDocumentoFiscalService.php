@@ -3,6 +3,9 @@
 namespace App\WMS\Contracts\Outbound;
 
 use App\WMS\Build\AbstractBase;
+use Illuminate\Http\JsonResponse;
+use Psy\Readline\Hoa\Console;
+use Illuminate\Support\Facades\Log;
 
 abstract class OrdenSalidaDocumentoFiscalService extends AbstractBase
 {
@@ -30,6 +33,8 @@ abstract class OrdenSalidaDocumentoFiscalService extends AbstractBase
      */
     abstract protected function folioFacturacion($model): int;
 
+
+
     /**
      * Corresponde al tipo de facturacion factura(33), factura exenta(34), boleta(39), Guia Despacho(52)
      */
@@ -39,4 +44,22 @@ abstract class OrdenSalidaDocumentoFiscalService extends AbstractBase
      * Representa el CD, Site o Bodega a la cual se recibira la mercaderia
      */
     abstract protected function fechaEmision($model): string;
+
+
+    public function getJson(): JsonResponse
+    {
+        $ordenSalidaDocumentoFiscal = parent::get();
+
+        Log::info('Orden de Salida Pedido Fiscal JSON:', [
+            'codOwner' => parent::codOwner(),
+            'codDeposito' => $ordenSalidaDocumentoFiscal->codDeposito,
+            'ordenSalidaDocumentoFiscal' => $ordenSalidaDocumentoFiscal,
+        ]);
+
+        return response()->json([
+            'codOwner' => parent::codOwner(),
+            'codDeposito' => $ordenSalidaDocumentoFiscal->codDeposito,
+            'ordenSalidaDocumentoFiscal' => $ordenSalidaDocumentoFiscal,
+        ]);
+    }
 }

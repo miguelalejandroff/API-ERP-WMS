@@ -20,10 +20,7 @@ abstract class ItemCodigoBarraService extends AbstractBase
     /**
      * Codigo de la unidad de medida asociada al codigo de barras
      */
-    public function codUnidadMedida($model): ?int
-    {
-        return 1;
-    }
+    abstract protected function codUnidadMedida($model): int;
 
     /**
      * Codigo que identifica el item (SKU)
@@ -87,17 +84,12 @@ abstract class ItemCodigoBarraService extends AbstractBase
     {
         return 0;
     }
-
     /**
      * Secuencia o prioridad en los codigos de barra del item
      */
-    public function secuencia($model): ?int
-    {
-        return self::$lineaActual;
-    }
-
     public function getJson(): JsonResponse
     {
+        
         $itemCodigoBarra = parent::get();
         return response()->json([
             'codOwner' => parent::codOwner(),

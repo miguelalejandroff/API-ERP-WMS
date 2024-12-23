@@ -13,4 +13,9 @@ class wmscodigobarra extends Model
     protected $connection = 'informix';
 
     public $timestamps = false;
+
+    public function cmproductos()
+    {
+        return $this->hasOne(cmproductos::class, 'pro_codigo', 'codigo_antig');
+    }
 }

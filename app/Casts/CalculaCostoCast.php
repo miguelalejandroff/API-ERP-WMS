@@ -20,6 +20,7 @@ class CalculaCostoCast implements CastsAttributes
     {
         return new CalcularCosto($model->cmordcom, $model);
     }
+    //referencia pedidosdetalles
 
     /**
      * Prepare the given value for storage.
@@ -34,4 +35,5 @@ class CalculaCostoCast implements CastsAttributes
     {
         return $value;
     }
+    // referencia pedidosdetalles
 }

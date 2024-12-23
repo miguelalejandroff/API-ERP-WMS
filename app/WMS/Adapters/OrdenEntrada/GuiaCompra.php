@@ -16,7 +16,7 @@ class GuiaCompra extends OrdenEntradaService
         return $model->guidetcompra->first()->gui_boddes;
     }
 
-    protected function nroOrdenEntrada($model): string
+    public function nroOrdenEntrada($model): string
     {
         return $model->gui_numero;
     }
@@ -24,6 +24,11 @@ class GuiaCompra extends OrdenEntradaService
     public function codTipo($model): string
     {
         return 7;
+    }
+
+    public function nroReferencia($model): string
+    {
+        return $model->gui_numero;
     }
     
     public function nroReferencia2($model): string
@@ -56,7 +61,7 @@ class GuiaCompra extends OrdenEntradaService
                     return $model->gui_boddes;
                 }
 
-                protected function nroOrdenEntrada($model): string
+                public function nroOrdenEntrada($model): string
                 {
                     return $model->gui_numero;
                 }
@@ -66,9 +71,9 @@ class GuiaCompra extends OrdenEntradaService
                     return $model->gui_produc;
                 }
 
-                public function cantidadSolicitada($model): int
+                public function cantidadSolicitada($model): float
                 {
-                    return $model->gui_saldo;
+                    return $model->gui_canrep;
                 }
 
             };

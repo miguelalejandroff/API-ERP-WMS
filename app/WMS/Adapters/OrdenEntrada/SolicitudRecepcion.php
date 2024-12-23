@@ -7,6 +7,10 @@ use App\WMS\Adapters\Admin\CreateProveedor;
 use App\WMS\Contracts\Inbound\OrdenEntradaDetalleService;
 use App\WMS\Contracts\Inbound\OrdenEntradaService;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
+use App\Exceptions\CustomException;
+use App\Casts\CorrelativoRecepcionCast;
+use Ramsey\Uuid\Type\Decimal;
 
 class SolicitudRecepcion extends OrdenEntradaService
 {
@@ -16,11 +20,16 @@ class SolicitudRecepcion extends OrdenEntradaService
         return $model->wmscmdetgui->first()->gui_boddes;
     }
 
-    protected function nroOrdenEntrada($model): string
+    public function nroOrdenEntrada($model): string
     {
-        return $model->gui_numero;
+        $correlativoRecepcion = $model->correlativoRecepcion ?? '';
+        $concatenation = $model->gui_numero . $model->gui_tipgui;
+    
+        Log::info("CorrelativoRecepcionCast - nroOrdenEntrada: $concatenation");
+    
+        return $correlativoRecepcion;
     }
-
+    
     public function nroOrdenCliente($model): ?string
     {
         return $model->gui_ordcom;
@@ -29,6 +38,11 @@ class SolicitudRecepcion extends OrdenEntradaService
     public function codTipo($model): string
     {
         return 15;
+    }
+
+    public function nroReferencia($model): string
+    {
+        return $model->gui_numero;
     }
 
     public function nroReferencia2($model): string
@@ -56,9 +70,14 @@ class SolicitudRecepcion extends OrdenEntradaService
                     return $model->gui_boddes;
                 }
 
-                protected function nroOrdenEntrada($model): string
+                public function nroOrdenEntrada($model): string
                 {
-                    return $model->gui_numero;
+                    $correlativoRecepcion = $model->correlativoRecepcion ?? '';
+                    $concatenation = $model->gui_numero . $model->gui_tipgui;
+                
+                    Log::info("CorrelativoRecepcionCast - nroOrdenEntrada: $concatenation");
+                
+                    return $correlativoRecepcion;
                 }
 
                 public function codItem($model): string
@@ -66,17 +85,10 @@ class SolicitudRecepcion extends OrdenEntradaService
                     return $model->gui_produc;
                 }
 
-                public function cantidadSolicitada($model): int
+                public function cantidadSolicitada($model): float
                 {
-                    return $model->gui_canord;
+                    return $model->gui_canrep;
                 }
-                /*
-                public function item($model)
-                {
-                    if ($model?->cmproductos) {
-                        return (new CreateItem($model->cmproductos))->get();
-                    }
-                }*/
             };
 
             return $detalle->get();

@@ -16,10 +16,10 @@ class GuiaRecepcion extends OrdenEntradaService
 
     protected function codDeposito($model): string
     {
-        return $model->cmdetgui->first()->gui_bodori;
+        return $model->cmdetgui->first()->gui_boddes;
     }
 
-    protected function nroOrdenEntrada($model): string
+    public function nroOrdenEntrada($model): string
     {
         return $model->gui_numero;
     }
@@ -27,6 +27,11 @@ class GuiaRecepcion extends OrdenEntradaService
     public function codTipo($model): string
     {
         return  8;
+    }
+
+    public function nroReferencia($model): string
+    {
+        return $model->gui_numero;
     }
 
     public function nroReferencia2($model): string
@@ -46,14 +51,13 @@ class GuiaRecepcion extends OrdenEntradaService
 
     public function codDepositoOrigen($model): ?string
     {
-        return $model->cmdetgui->first()->gui_boddes;
+        return $model->cmdetgui->first()->gui_bodori;
     }
 
     public function nroOrdenCliente($model): ?string
     {
         return $model->gui_ordcom;
     }
-
     public function ordenEntradaDetalle($model): Collection
     {
         return  $model->cmdetgui->map(function ($model) {
@@ -61,10 +65,10 @@ class GuiaRecepcion extends OrdenEntradaService
             {
                 protected function codDeposito($model): string
                 {
-                    return $model->gui_bodori;
+                    return $model->gui_boddes;
                 }
 
-                protected function nroOrdenEntrada($model): string
+                public function nroOrdenEntrada($model): string
                 {
                     return $model->gui_numero;
                 }
@@ -74,7 +78,7 @@ class GuiaRecepcion extends OrdenEntradaService
                     return $model->gui_produc;
                 }
 
-                public function cantidadSolicitada($model): int
+                public function cantidadSolicitada($model): float
                 {
                     return $model->gui_canrep;
                 }

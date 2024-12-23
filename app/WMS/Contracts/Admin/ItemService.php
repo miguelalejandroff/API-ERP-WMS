@@ -21,10 +21,7 @@ abstract class ItemService extends AbstractBase
     /**
      * Codigo de la unidad de medida Asociada al Producto
      */
-    public function codUnidadMedida($model): int
-    {
-        return 1;
-    }
+    abstract protected function codUnidadMedida($model): int;
 
     /**
      * Codigo alternativo del Producto
@@ -291,5 +288,5 @@ abstract class ItemService extends AbstractBase
                 $item
             ],
         ]);
-    }
+    }  
 }

@@ -9,9 +9,13 @@ use App\WMS\Contracts\Admin\ItemCodigoBarraService;
 use App\WMS\Contracts\Admin\ItemService;
 use App\WMS\Contracts\Admin\ProveedorService;
 use App\WMS\Contracts\Inbound\OrdenEntradaService;
+use App\WMS\Contracts\Outbound\OrdenSalidaDocumentoFiscalService;
 use App\WMS\Contracts\Outbound\OrdenSalidaService;
+use App\WMS\Contracts\Outbound\OrdenSalidaCambioEstadoService;
+use App\WMS\Adapters\OrdenSalida\Pedidos;
 use Illuminate\Http\Request;
-
+use Psy\Readline\Hoa\Console;
+use App\Http\Controllers\PedidosEstadoController;
 
 /**
  * Clase EndpointWMS: Proporciona métodos para interactuar con el servicio WMS (Warehouse Management System).
@@ -36,7 +40,6 @@ class EndpointWMS
      */
     public function createItem(ItemService $item)
     {
-        dd($item->getJson());
         return WMS::post('WMS_Admin/CreateItem', $item->getJson());
     }
 
@@ -57,13 +60,9 @@ class EndpointWMS
      * @param ItemCodigoBarraService $item Objeto ItemCodigoBarraService
      * @return mixed Respuesta de la solicitud WMS
      */
-    public function createItemCodigoBarra(ItemService $item)
+    public function createItemCodigoBarra(ItemCodigoBarraService $item)
     {
-        $r = (object)[];
-        $items = $item->get();
-        $r->codOwner = $items->codOwner;
-        $r->itemCodigoBarra = $items->itemCodigoBarra;
-        return WMS::post('WMS_Admin/CreateItemCodigoBarra', response()->json($r));
+        return WMS::post('WMS_Admin/CreateItemCodigoBarra', $item->getJson());
     }
 
     /**
@@ -101,13 +100,37 @@ class EndpointWMS
     }
 
     /**
-     * Crea una nueva orden de entrada
+     * Crea una nueva orden de Salida
      * 
-     * @param OrdenSalidaService $orden Orden de entrada
+     * @param OrdenSalidaService $orden Orden de Salida
      * @return mixed Respuesta de la solicitud WMS
      */
     public function createOrdenSalida(OrdenSalidaService $orden)
     {
-        return WMS::post('WMS_Outbound/CreateOrdenSalida', $orden->getJson());
+        $wms =  WMS::post('WMS_Outbound/CreateOrdenSalida', $orden->getJson());
+        if ($this->request->solicitudPedido) {
+            $pedidosEstadoController = new PedidosEstadoController();
+            $resultado = $pedidosEstadoController->actualizarDesdeWMS($this->request);
+        }
+        return $wms;
     }
+
+    /**
+     * Crea una nueva orden de Salida Documento Fiscal
+     * 
+     * @param OrdenSalidaDocumentoFiscalService $orden Orden de Salida Documento Fiscal 
+     * @return mixed Respuesta de la solicitud WMS
+     */
+    public function createOrdenSalidaDocumentoFiscal(OrdenSalidaDocumentoFiscalService $orden)
+    {
+        //return $orden->getJson();
+        return WMS::post('WMS_Outbound/CreateOrdenSalidaDocumentoFiscal', $orden->getJson());
+    }
+
+    public function createOrdenSalidaCambioEstado(OrdenSalidaCambioEstadoService $orden)
+    {
+        //dd($orden->getJson()->getContent());
+        return WMS::post('WMS_Outbound/CreateOrdenSalidaCambioEstado', $orden->getJson());
+    }
+
 }

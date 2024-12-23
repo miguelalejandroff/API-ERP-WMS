@@ -66,7 +66,7 @@ class OrdenCompraRecepcion extends Adapter implements ERPOrdenEntradaService
 
                         $row->precio = $ordenCompra->buscaProducto($row->codigoProducto)->first()->calculaCosto->precioCalculado;
 
-                        $promocion = enlacepromo::where('codigo_promos', $row->codigoProducto)->where('estado', 'A')->first();
+                        $promocion = enlacepromo::where('codigo_promos', $row->codigoProducto)->first();
 
                         // Crear una instancia de la clase SaldoOrden
                         new SaldoOrden($ordenCompra, $ordenCompraBonificada, $row->codigoProducto, $row->cantidadRecepcionada, function ($message) {
@@ -97,7 +97,7 @@ class OrdenCompraRecepcion extends Adapter implements ERPOrdenEntradaService
                     }
             }
             DB::commit();
-            Log::info('/OrdenCompraRececpcion', "Proceso de Recepcion sin problemas", $trackingId);
+            //Log::info('/OrdenCompraRececpcion', "Proceso de Recepcion sin problemas", $trackingId);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('/OrdenCompraRececpcion', $e->getMessage(), $trackingId);

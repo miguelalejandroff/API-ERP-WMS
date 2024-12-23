@@ -39,7 +39,7 @@ class SaldoBodega
         "bod_salfe2",
         "bod_salma2",
         "bod_salab2",
-        "bod_salmy2",
+        "bod_salmy2", //Inicio apertura
         "bod_salju2",
     ];
 
@@ -131,7 +131,7 @@ class SaldoBodega
         $saldoBodega->bod_salini = 0;
         $saldoBodega->bod_stockb = 0;
         $saldoBodega->bod_stolog = 0;
-        $saldoBodega->bod_storep = $cantidad;
+        $saldoBodega->bod_storep = $cantidad; 
         $saldoBodega->bod_stomax = $cantidad;
 
         foreach ($this->periodoActual as $month) {

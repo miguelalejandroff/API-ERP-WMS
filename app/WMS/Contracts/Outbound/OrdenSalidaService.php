@@ -4,6 +4,7 @@ namespace App\WMS\Contracts\Outbound;
 
 use App\WMS\Build\AbstractBase;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 
 abstract class OrdenSalidaService extends AbstractBase
 {
@@ -20,18 +21,12 @@ abstract class OrdenSalidaService extends AbstractBase
     /**
      * Numero opcional que puede referenciar al numero de orden de entrada
      */
-    public function nroReferencia($model): ?string
-    {
-        return null;
-    }
+    abstract protected function nroReferencia($model): string;
 
     /**
      * Numero opcional que puede referenciar al numero de orden de entrada
      */
-    public function nroReferencia2($model): ?string
-    {
-        return null;
-    }
+    abstract protected function nroReferencia2($model): string;
     
     /**
      * Numero opcional que puede referenciar al numero de orden de entrada
@@ -70,6 +65,7 @@ abstract class OrdenSalidaService extends AbstractBase
     {
         return null;
     }
+
 
     /**
      * Fecha en la que el sistema origen envia orden a WMS
@@ -123,6 +119,12 @@ abstract class OrdenSalidaService extends AbstractBase
     public function getJson(): JsonResponse
     {
         $ordenSalida = parent::get();
+        Log::info('Orden de Salida JSON:', [
+            'codOwner' => parent::codOwner(),
+            'codDeposito' => $ordenSalida->codDeposito,
+            'nroOrdenSalida' => $ordenSalida->nroOrdenSalida,
+            'ordenSalida' => $ordenSalida,
+        ]);
         return response()->json([
             'codOwner' => parent::codOwner(),
             'codDeposito' => $ordenSalida->codDeposito,

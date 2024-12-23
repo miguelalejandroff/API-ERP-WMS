@@ -48,11 +48,16 @@ class cmsalbod extends Model
         "bod_salmy2",
         "bod_salju2"
     ];
-    public function scopebyBodegaProducto($query, $bodega, $producto, $year = null)
+    public function scopeByBodegaProducto($query, $producto, $bodega, $year = null)
     {
         if (is_null($year)) {
             $year = Carbon::now()->year;
         }
-        return $query->where('bod_produc', $producto)->where('bod_bodega', $bodega)->where('bod_ano', $year)->first();
+        // Devuelve directamente el resultado de first()
+        return $query->where('bod_produc', $producto)
+                     ->where('bod_bodega', $bodega)
+                     ->where('bod_ano', $year)
+                     ->first();
     }
+    
 }

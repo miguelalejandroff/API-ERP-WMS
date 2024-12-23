@@ -215,12 +215,20 @@ return [
         App\WMS\Providers\OrdenEntradaServiceProvider::class,
         App\WMS\Providers\OrdenSalidaServiceProvider::class,
         App\WMS\Providers\ProveedorServiceProvider::class,
+        App\WMS\Providers\OrdenSalidaDocumentoFiscalServiceProvider::class,
+        App\WMS\Providers\OrdenSalidaCambioEstadoServiceProvider::class,
+
 
         /*
          * Servicios Para Enviar al ERP 
          */
         App\ERP\Providers\OrdenEntradaServiceProvider::class,
         App\ERP\Providers\OrdenSalidaServiceProvider::class,
+        App\ERP\Providers\InventarioServiceProvider::class,
+        App\ERP\Providers\AjustePositivoServiceProvider::class,
+        App\ERP\Providers\AjusteNegativoServiceProvider::class,
+        App\ERP\Providers\TraspasoBodegaServiceProvider::class,
+        App\ERP\Providers\CancelarDocumentoServiceProvider::class,
     ],
 
     /*

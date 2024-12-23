@@ -13,22 +13,15 @@ use Illuminate\Support\Facades\Event;
 
 class EventServiceProvider extends ServiceProvider
 {
-    /**
-     * The event to listener mappings for the application.
-     *
-     * @var array<class-string, array<int, class-string>>
-     */
-    protected $listen = [
-        Registered::class => [
-            SendEmailVerificationNotification::class,
-        ],
-        JobProcessed::class => [
-            LogJobCompletion::class,
-        ],
-        JobFailed::class => [
-            LogJobFailure::class,
-        ],
-    ];
+
+    // app/Providers/EventServiceProvider.php
+
+        protected $listen = [
+            'App\Events\ActualizarDesdeWMSEvent' => [
+                'App\Listeners\ActualizarDesdeWMSListener',
+            ],
+];
+
 
     /**
      * Register any events for your application.

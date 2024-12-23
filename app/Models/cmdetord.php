@@ -35,7 +35,8 @@ class cmdetord extends Model
 
     protected $casts = [
         'calculaCosto' => CalculaCostoCast::class,
-    ];
+    ]; 
+    // referencia pedidosdetalles
 
     public function cmordcom()
     {

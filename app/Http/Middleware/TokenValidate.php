@@ -15,12 +15,26 @@ class TokenValidate
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->header('dataAuth') !== 'LWHXftRvCLqhW+IiQnHygDMOX2JHZv/KA387nvwqKijhrj3ehMg5VMXx+jT1GPRp') {
+
+        // Verifica si la solicitud es interna comprobando la dirección IP
+        if ($this->isRequestInternal($request)) {
+            return $next($request);
+        }
+
+        if ($request->header('dataAuth') !== env('token_validate')) {
             return response()->json([
                 'message' => 'Token incorrecto'
             ], 500);
         }
 
         return $next($request);
+    }
+
+
+    private function isRequestInternal(Request $request): bool
+    {
+        // Comprobar si la solicitud proviene de la misma máquina
+        // Esto se puede ajustar según la configuración de tu servidor
+        return $request->server('REMOTE_ADDR') === '198.1.1.122';
     }
 }

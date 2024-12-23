@@ -31,12 +31,10 @@ class OrdenSalidaServiceProvider extends ServiceProvider
 
 
             Log::info('Request Logged:', [
-                'context' => $context,
-            ]);
+               'context' => $context,
+             ]);
+            
             switch ($context->recepcion->tipoDocumentoERP) {
-                case TipoDocumentoERP::SOLICITUD_DESPACHO->value:
-                    //$context->solicitudDespacho = despachoencab::solicitudDespacho($context->recepcion->numeroDocumento);
-                    return new SolicitudDespacho($context);
                 default:
                     return new SolicitudDespacho($context);
             }

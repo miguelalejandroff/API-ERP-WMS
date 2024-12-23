@@ -2,6 +2,8 @@
 
 namespace App\ERP\Build;
 
+use App\ERP\Context\OrdenEntradaContext;
+use App\Exceptions\CustomException;
 use Exception;
 
 abstract class Handler
@@ -24,10 +26,16 @@ abstract class Handler
                 $this->next->execute($context);
             }
         } catch (Exception $e) {
-            //$context->addLog(get_class($this) . " failed with message: " . $e->getMessage());
-            throw $e;
+
+            $exception = new CustomException("Error en " . get_class($this) . ": " . $e->getMessage(), [
+                'message' => $e->getMessage(),
+                'code' => $e->getCode()
+            ], 500);
+
+            $exception->saveToDatabase();
+            throw $exception;
         }
     }
 
-    abstract protected function handle($context);
+    abstract protected function handle(OrdenEntradaContext $context);
 }

@@ -46,9 +46,10 @@ class WMS
     public function __construct(
         protected $url = 'http://198.1.1.122:1950/EnfasysWMS_Api/api/',
         protected $contentType = 'application/json',
-        protected $dataAuth = 'LWHXftRvCLqhW+IiQnHygDMOX2JHZv/KA387nvwqKijhrj3ehMg5VMXx+jT1GPRp',
+        protected $dataAuth = '',
         protected $headers = []
     ) {
+        $this->dataAuth = env('token_validate');
         $this->headers = [
             'Content-Type' => $this->contentType,
             'dataAuth' => $this->dataAuth

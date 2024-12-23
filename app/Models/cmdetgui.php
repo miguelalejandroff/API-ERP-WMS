@@ -35,4 +35,16 @@ class cmdetgui extends Model
     {
         return $this->hasOne(cmproductos::class, 'pro_codigo', 'gui_produc')->where('pro_anomes', now()->format('Ym'));
     }
+
+    public function sucursalOrigen()
+    {
+        return $this->hasOne(cmguias::class, 'gui_sucori', 'gui_bodori'); 
+    }
+
+    public function cmguia()
+    {
+        return $this->belongsTo(cmguias::class, ['gui_numero', 'gui_tipgui'], ['gui_numero', 'gui_tipgui']);
+    }
+    
+
 }

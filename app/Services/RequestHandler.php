@@ -45,7 +45,7 @@ class RequestHandler
 
             // Define el encabezado dataAuth & token actualizado a la fecha por Bastian
             $headers = [
-                'dataAuth' => 'LWHXftRvCLqhW+IiQnHygDMOX2JHZv/KA387nvwqKijhrj3ehMg5VMXx+jT1GPRp',
+                'dataAuth' => env('token_validate'),
             ];
 
             // Realiza una solicitud POST al endpoint con el encabezado personalizado

@@ -19,6 +19,27 @@ class despachoencab extends Model
 
     public $timestamps = false;
 
+    protected $fillable = [
+        "des_folio",
+        "des_tipo",
+        "des_marcaitem",
+        "des_fecha",
+        "des_numrut",
+        "des_digrut",
+        "des_subcta",
+        "des_nombre",
+        "des_guipro",
+        "des_facpro",
+        "des_facals",
+        "des_sucori",
+        "des_sucdes",
+        "des_estado",
+        "des_desestado",
+        "des_numgui",
+        "des_usuario",
+        "des_current"
+    ];
+
     public function despachodetalle()
     {
         return $this->hasMany(despachodetalle::class, 'des_folio', 'des_folio');

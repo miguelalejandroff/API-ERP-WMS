@@ -17,14 +17,32 @@ class GuiaDespacho extends OrdenEntradaService
         return $model->cmdetgui->first()->gui_boddes;
     }
 
-    protected function nroOrdenEntrada($model): string
+    public function nroOrdenEntrada($model): string
     {
         return $model->gui_numero;
     }
 
     public function codTipo($model): string
     {
-        return 4;
+        switch ($model->gui_tipgui) { 
+            case '05':
+                return 5;
+            case '06':
+                return 6;
+            case '11':
+                return 12;
+            case '48':
+                return 48;
+            case '39':
+                return 39;
+            case '21':
+                return 21;
+        }
+    }
+
+    public function nroReferencia($model): string
+    {
+        return $model->gui_numero;
     }
 
     public function nroReferencia2($model): string
@@ -37,15 +55,16 @@ class GuiaDespacho extends OrdenEntradaService
         return  $model->gui_subcta;
     }
 
+    public function codSucursal($model): ?string
+    {
+        return $model->gui_sucori;
+    }
+
     public function fechaEmisionERP($model): ?string
     {
         return  WMS::date($model->gui_fechag, 'Y-m-d');
     }
 
-    public function nroOrdenCliente($model): ?string
-    {
-        return $model->gui_ordcom;
-    }
 
     public function ordenEntradaDetalle($model): Collection
     {
@@ -57,7 +76,7 @@ class GuiaDespacho extends OrdenEntradaService
                     return $model->gui_boddes;
                 }
 
-                protected function nroOrdenEntrada($model): string
+                public function nroOrdenEntrada($model): string
                 {
                     return $model->gui_numero;
                 }
@@ -67,7 +86,7 @@ class GuiaDespacho extends OrdenEntradaService
                     return $model->gui_produc;
                 }
 
-                public function cantidadSolicitada($model): int
+                public function cantidadSolicitada($model): float
                 {
                     return $model->gui_canrep;
                 }

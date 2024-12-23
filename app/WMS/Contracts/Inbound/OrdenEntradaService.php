@@ -6,6 +6,7 @@ use App\Libs\WMS;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Collection;
 use App\WMS\Build\AbstractBase;
+use Illuminate\Support\Facades\Log;
 
 abstract class OrdenEntradaService extends AbstractBase
 {
@@ -22,16 +23,14 @@ abstract class OrdenEntradaService extends AbstractBase
     /**
      * Numero opcional que puede referenciar al numero de orden de entrada
      */
-    public function nroReferencia($model): ?string
-    {
-        return null;
-    }
+    abstract protected function nroReferencia($model): string;
+
 
     /**
      * Numero opcional que puede referenciar al numero de orden de entrada
      */
     abstract protected function nroReferencia2($model): string;
-  
+
 
     /**
      * Numero opcional que puede referenciar al numero de orden de entrada
@@ -191,6 +190,14 @@ abstract class OrdenEntradaService extends AbstractBase
     {
 
         $ordenEntrada = parent::get();
+
+        Log::info('Enviando datos a WMS: ' . json_encode([
+            'codOwner' => parent::codOwner(),
+            'codDeposito' => $ordenEntrada->codDeposito,
+            'nroOrdenEntrada' => $ordenEntrada->nroOrdenEntrada,
+            'ordenEntrada' => $ordenEntrada,
+        ]));
+
         return response()->json([
             'codOwner' => parent::codOwner(),
             'codDeposito' => $ordenEntrada->codDeposito,

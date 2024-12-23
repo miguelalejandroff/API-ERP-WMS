@@ -5,6 +5,7 @@ namespace App\ERP\Handler;
 use App\Models\cmproductos;
 use Carbon\Carbon;
 use Exception;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class MaestroProducto
@@ -27,7 +28,6 @@ class MaestroProducto
     ) {
         try {
             $producto = cmproductos::byProducto($producto);
-
             $precio = round($precio, 2);
             $cantidad = round($cantidad, 2);
             $cantidadRecepcionada = round($cantidadRecepcionada, 2);
@@ -71,9 +71,10 @@ class MaestroProducto
 
             $array['pro_stockp'] = round($producto->pro_stockp + $cantidadRecepcionada, 2);
             $array['pro_cosmed'] = round($costoMedio, 2);
-            dd($array); 
+
             $producto->update($array);
         } catch (Exception $e) {
+
             throw new $e;
         }
     }

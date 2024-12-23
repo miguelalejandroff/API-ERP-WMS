@@ -93,7 +93,7 @@ class GuiaRecepcion
     public function insertEncabezado($id, $recepcion, $proveedor)
     {
         return cmguias::create([
-            "gui_numero" => $id,
+            "gui_numero" => $id, //mismo numero de la solicitud de recepcion $recepcion->solicitudRecepcion
             "gui_tipgui" => $this->tipoGuia,
             "gui_fechag" => WMS::date($recepcion->fechaRecepcionWMS, WMS::DATE_FORMAT_WMS, WMS::DATE_FORMAT_DATE),
             "gui_ordcom" => $recepcion->numeroOrden,
