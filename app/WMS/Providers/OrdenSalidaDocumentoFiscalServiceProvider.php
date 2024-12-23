@@ -17,96 +17,128 @@ class OrdenSalidaDocumentoFiscalServiceProvider extends ServiceProvider
      *
      * @return void
      */
-    public function register()
+    public function register(): void
     {
         $this->app->bind(OrdenSalidaDocumentoFiscalService::class, function ($app) {
             try {
-
                 $tracking = $app->request->attributes->get('tracking');
-                //Log::info('OrdenSalidaDocumentoFiscalService: Inicio del servicio. Tracking: ' . json_encode($tracking));
 
                 $adapter = null;
+                $model = null;
+                $rubro = null;
 
                 switch (true) {
                     case $app->request->guiaFiscal:
-                        $despachos = $app->request->guiaFiscal;
-    
-                        // Extraer los últimos dos dígitos del número de despacho
-                        $despachotipo = substr($despachos, -2);
-                    
-                        // Obtener el número de ajuste sin los últimos dos dígitos
-                        $despachorequest = substr($despachos, 0, -2);
-                        Log::info('Buscando despacho con gui_numero: ' . $despachorequest . ', gui_tipgui: ' . $despachotipo);
-
-                        $model = cmguias::where([
-                            'gui_numero' => $despachorequest,
-                            'gui_tipgui' => $despachotipo
-                        ])->first(); 
-
-                        if ($model) {
-                            Log::info('Modelo encontrado:', ['model' => $model->toArray()]);
-                        } else {
-                            Log::error('No se encontró ningún modelo para los valores de despacho proporcionados.');
-                            throw new CustomException('Modelo no encontrado', [], 500);
-                        }
-
-                        $adapter = GuiaDespacho::class;
-
+                        [$model, $adapter] = $this->handleGuiaFiscal($app->request->guiaFiscal);
                         break;
 
                     case $app->request->pedidoFiscal:
-                        $guiaDespacho = $app->request->pedidoFiscal;
-                        $rubro = substr($guiaDespacho, -1);
-
-                        // Extraer los últimos dos dígitos del número de pedido
-                        $despachotipo = substr($guiaDespacho, -3, 2);
-                    
-                        // Obtener el número de pedido sin los últimos cuatro dígitos
-                        $despachorequest = substr($guiaDespacho, 0, -3);
-                        Log::info('Buscando pedido con gui_numero: ' . $despachorequest . ', gui_tipgui: ' . $despachotipo);
-
-                        $model = cmguias::where([
-                            'gui_numero' => $despachorequest,
-                            'gui_tipgui' => $despachotipo
-                        ])->first(); 
-
-                        if ($model) {
-                            Log::info('Modelo encontrado:', ['model' => $model->toArray()]);
-                            
-                        } else {
-                            Log::error('No se encontró ningún modelo para los valores de pedido proporcionados.');
-                            throw new CustomException('Modelo no encontrado', [], 500);
-                        }
-                            
-                        $adapterClass = GuiaDespachoPedido::class;
-                        $adapter = new $adapterClass($model, $rubro);
-
+                        [$model, $adapter, $rubro] = $this->handlePedidoFiscal($app->request->pedidoFiscal);
                         break;
 
                     default:
-                        throw new CustomException('No se proporciono ningun parametro valido', [], 500);
+                        throw new CustomException('No se proporcionó ningún parámetro válido', [], 500);
                 }
 
-                
-                $trackingData['errors'] = null;
-                $trackingData['status'] = 200;
-                $trackingData['message'] = 'OK';
-
-                $tracking->addTrackingData($trackingData);
-
-                if ($app->request->pedidoFiscal) {
-                    $adapterInstance = new $adapter($model, $rubro);
-                } else {
-                    $adapterInstance = new $adapter($model);
+                if (!$model) {
+                    throw new CustomException('Modelo no encontrado', [], 500);
                 }
-                return $adapterInstance;
+
+                $this->addTrackingData($tracking);
+
+                return $this->createAdapterInstance($adapter, $model, $rubro);
             } catch (CustomException $e) {
                 Log::error('Excepción atrapada: ' . $e->getMessage());
                 $e->saveToDatabase();
-                throw $e; // Cambia el 400 por el código de estado que corresponda
+                throw $e;
             }
-
         });
+    }
+
+    /**
+     * Maneja la lógica para guiaFiscal.
+     *
+     * @param string $guiaFiscal
+     * @return array
+     */
+    private function handleGuiaFiscal(string $guiaFiscal): array
+    {
+        $despachotipo = substr($guiaFiscal, -2);
+        $despachorequest = substr($guiaFiscal, 0, -2);
+
+        Log::info("Buscando despacho con gui_numero: $despachorequest, gui_tipgui: $despachotipo");
+
+        $model = cmguias::where([
+            'gui_numero' => $despachorequest,
+            'gui_tipgui' => $despachotipo,
+        ])->first();
+
+        if (!$model) {
+            Log::error('No se encontró ningún modelo para los valores de despacho proporcionados.');
+            throw new CustomException('Modelo no encontrado', [], 500);
+        }
+
+        Log::info('Modelo encontrado:', ['model' => $model->toArray()]);
+        return [$model, GuiaDespacho::class];
+    }
+
+    /**
+     * Maneja la lógica para pedidoFiscal.
+     *
+     * @param string $pedidoFiscal
+     * @return array
+     */
+    private function handlePedidoFiscal(string $pedidoFiscal): array
+    {
+        $rubro = substr($pedidoFiscal, -1);
+        $despachotipo = substr($pedidoFiscal, -3, 2);
+        $despachorequest = substr($pedidoFiscal, 0, -3);
+
+        Log::info("Buscando pedido con gui_numero: $despachorequest, gui_tipgui: $despachotipo");
+
+        $model = cmguias::where([
+            'gui_numero' => $despachorequest,
+            'gui_tipgui' => $despachotipo,
+        ])->first();
+
+        if (!$model) {
+            Log::error('No se encontró ningún modelo para los valores de pedido proporcionados.');
+            throw new CustomException('Modelo no encontrado', [], 500);
+        }
+
+        Log::info('Modelo encontrado:', ['model' => $model->toArray()]);
+        return [$model, GuiaDespachoPedido::class, $rubro];
+    }
+
+    /**
+     * Añade datos de seguimiento.
+     *
+     * @param object $tracking
+     * @return void
+     */
+    private function addTrackingData(object $tracking): void
+    {
+        $trackingData = [
+            'errors' => null,
+            'status' => 200,
+            'message' => 'OK',
+        ];
+        $tracking->addTrackingData($trackingData);
+    }
+
+    /**
+     * Crea una instancia del adaptador.
+     *
+     * @param string $adapter
+     * @param object $model
+     * @param string|null $rubro
+     * @return object
+     */
+    private function createAdapterInstance(string $adapter, object $model, ?string $rubro = null): object
+    {
+        return $rubro
+            ? new $adapter($model, $rubro)
+            : new $adapter($model);
     }
 
     /**
@@ -114,8 +146,8 @@ class OrdenSalidaDocumentoFiscalServiceProvider extends ServiceProvider
      *
      * @return void
      */
-    public function boot()
+    public function boot(): void
     {
-        //
+        // No se necesita lógica de arranque
     }
 }

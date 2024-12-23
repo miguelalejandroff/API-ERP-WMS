@@ -3,7 +3,6 @@
 namespace App\WMS\Adapters\OrdenEntrada;
 
 use App\Libs\WMS;
-use App\WMS\Adapters\Admin\CreateCliente;
 use App\WMS\Adapters\Admin\CreateProveedor;
 use App\WMS\Contracts\Inbound\OrdenEntradaDetalleService;
 use App\WMS\Contracts\Inbound\OrdenEntradaService;
@@ -11,91 +10,166 @@ use Illuminate\Support\Collection;
 
 class GuiaDespacho extends OrdenEntradaService
 {
-
-    protected function codDeposito($model): string
+    /**
+     * Devuelve el código del depósito.
+     *
+     * @param object $model
+     * @return string
+     */
+    protected function codDeposito(object $model): string
     {
-        return $model->cmdetgui->first()->gui_boddes;
+        return $model->cmdetgui->first()?->gui_boddes ?? '';
     }
 
-    public function nroOrdenEntrada($model): string
-    {
-        return $model->gui_numero;
-    }
-
-    public function codTipo($model): string
-    {
-        switch ($model->gui_tipgui) { 
-            case '05':
-                return 5;
-            case '06':
-                return 6;
-            case '11':
-                return 12;
-            case '48':
-                return 48;
-            case '39':
-                return 39;
-            case '21':
-                return 21;
-        }
-    }
-
-    public function nroReferencia($model): string
+    /**
+     * Devuelve el número de orden de entrada.
+     *
+     * @param object $model
+     * @return string
+     */
+    public function nroOrdenEntrada(object $model): string
     {
         return $model->gui_numero;
     }
 
-    public function nroReferencia2($model): string
+    /**
+     * Devuelve el código de tipo basado en gui_tipgui.
+     *
+     * @param object $model
+     * @return string
+     */
+    public function codTipo(object $model): string
+    {
+        return match ($model->gui_tipgui) {
+            '05' => '5',
+            '06' => '6',
+            '11' => '12',
+            '48' => '48',
+            '39' => '39',
+            '21' => '21',
+            default => '',
+        };
+    }
+
+    /**
+     * Devuelve el número de referencia principal.
+     *
+     * @param object $model
+     * @return string
+     */
+    public function nroReferencia(object $model): string
+    {
+        return $model->gui_numero;
+    }
+
+    /**
+     * Devuelve el número de referencia secundaria.
+     *
+     * @param object $model
+     * @return string
+     */
+    public function nroReferencia2(object $model): string
     {
         return $model->gui_tipgui;
     }
 
-    public function codProveedor($model): string
+    /**
+     * Devuelve el código del proveedor.
+     *
+     * @param object $model
+     * @return string
+     */
+    public function codProveedor(object $model): string
     {
-        return  $model->gui_subcta;
+        return $model->gui_subcta;
     }
 
-    public function codSucursal($model): ?string
+    /**
+     * Devuelve el código de sucursal.
+     *
+     * @param object $model
+     * @return string|null
+     */
+    public function codSucursal(object $model): ?string
     {
         return $model->gui_sucori;
     }
 
-    public function fechaEmisionERP($model): ?string
+    /**
+     * Devuelve la fecha de emisión en formato ERP.
+     *
+     * @param object $model
+     * @return string|null
+     */
+    public function fechaEmisionERP(object $model): ?string
     {
-        return  WMS::date($model->gui_fechag, 'Y-m-d');
+        return WMS::date($model->gui_fechag, 'Y-m-d');
     }
 
-
-    public function ordenEntradaDetalle($model): Collection
+    /**
+     * Procesa los detalles de la orden de entrada.
+     *
+     * @param object $model
+     * @return Collection
+     */
+    public function ordenEntradaDetalle(object $model): Collection
     {
-        return  $model->cmdetgui->map(function ($model) {
-            $detalle = new class($model) extends OrdenEntradaDetalleService
-            {
-                protected function codDeposito($model): string
+        return $model->cmdetgui->map(function ($detalleModel) {
+            return (new class($detalleModel) extends OrdenEntradaDetalleService {
+                /**
+                 * Devuelve el código del depósito.
+                 *
+                 * @param object $model
+                 * @return string
+                 */
+                protected function codDeposito(object $model): string
                 {
                     return $model->gui_boddes;
                 }
 
-                public function nroOrdenEntrada($model): string
+                /**
+                 * Devuelve el número de orden de entrada.
+                 *
+                 * @param object $model
+                 * @return string
+                 */
+                public function nroOrdenEntrada(object $model): string
                 {
                     return $model->gui_numero;
                 }
 
-                public function codItem($model): string
+                /**
+                 * Devuelve el código del ítem.
+                 *
+                 * @param object $model
+                 * @return string
+                 */
+                public function codItem(object $model): string
                 {
                     return $model->gui_produc;
                 }
 
-                public function cantidadSolicitada($model): float
+                /**
+                 * Devuelve la cantidad solicitada.
+                 *
+                 * @param object $model
+                 * @return float
+                 */
+                public function cantidadSolicitada(object $model): float
                 {
-                    return $model->gui_canrep;
+                    return (float) $model->gui_canrep;
                 }
-            };
-
-            return $detalle->get();
+            })->get();
         });
     }
-    public function proveedor($model)
+
+    /**
+     * Devuelve los datos del proveedor.
+     *
+     * @param object $model
+     * @return array
+     */
+    public function proveedor(object $model): array
     {
         return (new CreateProveedor($model->cmclientes))->get();
     }
