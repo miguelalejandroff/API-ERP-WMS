@@ -19,66 +19,111 @@ class AjustePositivo implements AjustePositivoService
         $this->context = $context;
     }
 
+    /**
+     * Ejecuta el proceso de ajuste positivo.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function run()
     {
         DB::beginTransaction();
 
         try {
-            // Usa el controlador para actualizar la base de datos
             $controller = $this->getController();
             $response = $controller->actualizarDesdeWMS($this->buildRequest());
 
-            //Verifica si la respuesta contiene un error
-            if ($response->status() !== 200) {
-                throw new Exception($response->getData()->message);
-            }
-
-
-            $this->saldoBodegaAjusPos($this->context);
+            $this->validateResponse($response);
+            $this->processSaldoBodega();
 
             DB::commit();
 
-            return response()->json(["message" => "Proceso de Ajuste Positivo completado sin problemas"], 200);
+            return response()->json([
+                "status" => "success",
+                "message" => "Proceso completado con éxito."
+            ], 200);
         } catch (Exception $e) {
             DB::rollBack();
-            // Visualización de error resumida
-            $errorMessage = sprintf(
-                "Error en el proceso de Ajuste Positivo: %s. Datos de la solicitud: %s",
-                $e->getMessage(),
-                json_encode($this->context)
-            );
-            Log::error($errorMessage);
-            return response()->json(["message" => "Error en el proceso de Ajuste Positivo: " . $e->getMessage()], 500);
+            $this->logError($e);
+            return response()->json([
+                "status" => "error",
+                "message" => $e->getMessage()
+            ], 500);
         }
     }
-    public function getController()
+
+    /**
+     * Obtiene una instancia del controlador AjustePositivoController.
+     *
+     * @return AjustePositivoController
+     */
+    protected function getController(): AjustePositivoController
     {
-        // Ajusta según tus necesidades
         return app(AjustePositivoController::class);
     }
 
-    private function saldoBodegaAjusPos($context)
+    /**
+     * Procesa el saldo en bodega.
+     */
+    private function processSaldoBodega(): void
     {
         try {
             $handler = new SaldoBodegaAjusPos();
-            $handler->handle($context); // Asegúrate de tener la instancia correcta de $context
-            Log::info('DespachoTransito', ['message' => 'SaldoBodegaAjusPos ejecutado con éxito.']);
+            $handler->handle($this->context);
+            Log::info('SaldoBodegaAjusPos ejecutado con éxito.', ['context' => $this->context]);
         } catch (Exception $e) {
-            Log::error('DespachoTransito', ['message' => 'Error al ejecutar SaldoBodegaAjusPos: ' . $e->getMessage()]);
+            Log::error('Error al ejecutar SaldoBodegaAjusPos: ' . $e->getMessage(), ['context' => $this->context]);
+            throw new Exception("Error al procesar el saldo en bodega.", $e->getCode(), $e);
         }
     }
 
-    protected function buildRequest()
+    /**
+     * Construye la solicitud Request a partir del contexto.
+     *
+     * @return Request
+     */
+    protected function buildRequest(): Request
     {
-        $ajustePositivoArray = json_decode(json_encode($this->context->ajustePositivo), true);
+        $ajustePositivoArray = (array)$this->context->ajustePositivo;
 
-        $requestArray = [
+        // Validar si la fecha es válida
+        $fechaRecepcionWMS = $ajustePositivoArray['fechaRecepcionWMS'] ?? null;
+        if ($fechaRecepcionWMS && !strtotime($fechaRecepcionWMS)) {
+            throw new Exception("La fechaRecepcionWMS no es una fecha válida.");
+        }
+
+        return new Request([
             'numeroDocumento' => $ajustePositivoArray['numeroDocumento'] ?? null,
-            'fechaRecepcionWMS' => $ajustePositivoArray['fechaRecepcionWMS'] ?? null,
+            'fechaRecepcionWMS' => $fechaRecepcionWMS,
             'usuario' => $ajustePositivoArray['usuario'] ?? null,
-            'documentoDetalle' => $ajustePositivoArray['documentoDetalle'] ?? []
-        ];
+            'documentoDetalle' => $ajustePositivoArray['documentoDetalle'] ?? [],
+        ]);
+    }
 
-        return new Request($requestArray);
+    /**
+     * Valida la respuesta del controlador.
+     *
+     * @param $response
+     * @throws Exception
+     */
+    protected function validateResponse($response): void
+    {
+        if ($response->status() !== 200) {
+            $errorMessage = $response->getData()->message ?? 'Error desconocido en la respuesta del controlador';
+            throw new Exception($errorMessage);
+        }
+    }
+
+    /**
+     * Registra el error en los logs.
+     *
+     * @param Exception $e
+     */
+    protected function logError(Exception $e): void
+    {
+        Log::error(sprintf(
+            "Error: %s | Contexto: %s",
+            $e->getMessage(),
+            json_encode($this->context)
+        ));
     }
 }
