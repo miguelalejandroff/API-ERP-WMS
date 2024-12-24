@@ -24,18 +24,38 @@ class OrdenEntradaServiceProvider extends ServiceProvider
         $this->app->bind(OrdenEntradaService::class, function ($app) {
             $requestData = $app->request->all();
 
-            // Log inicial para trazabilidad
             Log::info('Solicitud recibida en OrdenEntradaService', ['request_data' => $requestData]);
 
-            // Crear contexto
-            $context = new OrdenEntradaContext($requestData);
-            $tipoDocumento = $context->recepcionWms->getDocumento('tipoDocumentoERP');
-            $ordenEstado = $context->ordenCompra->getDocumento('ord_estado');
+            try {
+                $context = new OrdenEntradaContext($requestData);
 
-            // Determinar acción según el tipo de documento
-            return $this->resolverServicio($context, $tipoDocumento, $ordenEstado);
+                if (!$context->ordenCompra) {
+                    Log::error("ordenCompra no inicializado", ['request_data' => $requestData]);
+                    throw new CustomException("Datos de Orden de Compra no válidos o incompletos", [], 400);
+                }
+
+                $tipoDocumento = $context->recepcionWms->getDocumento('tipoDocumentoERP');
+                $ordenEstado = $context->ordenCompra->getDocumento('ord_estado');
+
+                return $this->resolverServicio($context, $tipoDocumento, $ordenEstado);
+            } catch (CustomException $e) {
+                Log::error('Error en OrdenEntradaService', [
+                    'error_message' => $e->getMessage(),
+                    'request_data' => $requestData,
+                ]);
+                throw $e;
+            } catch (\Exception $e) {
+                Log::error('Error inesperado en OrdenEntradaService', [
+                    'error_message' => $e->getMessage(),
+                    'request_data' => $requestData,
+                ]);
+                throw new CustomException("Error interno en OrdenEntradaService", [], 500);
+            }
         });
     }
+
+
+
 
     /**
      * Resuelve y devuelve el servicio correspondiente según el tipo de documento y estado.
@@ -77,11 +97,15 @@ class OrdenEntradaServiceProvider extends ServiceProvider
     {
         // Validar estado de la Orden de Compra
         if ($ordenEstado === OrdenStatus::ANULADA->value) {
-            throw new CustomException("Orden de Compra Anulada: {$context->ordenCompra->getDocumento('ord_numcom')}", [], 500);
+            $msg = "Orden de Compra Anulada: {$context->ordenCompra->getDocumento('ord_numcom')}";
+            Log::error($msg);
+            throw new CustomException($msg, [], 500);
         }
 
         if ($ordenEstado === OrdenStatus::CERRADA->value) {
-            throw new CustomException("Orden de Compra Cerrada: {$context->ordenCompra->getDocumento('ord_numcom')}", [], 500);
+            $msg = "Orden de Compra Cerrada: {$context->ordenCompra->getDocumento('ord_numcom')}";
+            Log::error($msg);
+            throw new CustomException($msg, [], 500);
         }
 
         if (in_array($ordenEstado, [OrdenStatus::PENDIENTE->value, OrdenStatus::RECIBIDA->value])) {
@@ -90,6 +114,8 @@ class OrdenEntradaServiceProvider extends ServiceProvider
             return new SolicitudRecepcion($context);
         }
 
-        throw new CustomException("Estado no válido: {$ordenEstado}", [], 500);
+        $msg = "Estado no válido: {$ordenEstado}";
+        Log::error($msg);
+        throw new CustomException($msg, [], 500);
     }
 }
